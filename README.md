@@ -66,12 +66,16 @@ npm run dev
 
 ## 개발 워크플로
 
-```bash
-# 작업 시작 전
-git pull
-
-# 작업 완료 후
-git add .
-git commit -m "변경 내용 요약"
-git push
+**작업 시작 전** (PowerShell):
+```powershell
+.\git-start.ps1
 ```
+main 최신화 → `local/YYYYMMDD-HHmm` 브랜치 자동 생성
+
+**작업 완료 후** (PowerShell):
+```powershell
+.\git-done.ps1 "feat: 변경 내용 요약"
+```
+커밋 → push → GitHub PR 페이지 자동 오픈
+
+GitHub: `https://github.com/Supaper/av-system-builder`
