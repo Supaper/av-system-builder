@@ -148,6 +148,10 @@ interface Equipment {
 - **어노테이션 노드** — 텍스트 메모 노드 + 편집 모달 (`AnnotationNode`, `EditAnnotationModal`)
 - **Shape/Zone 노드** — 영역 표시용 사각형 노드 (`ShapeNode`)
 - **MiniMap** — 캔버스 전체 조망 미니맵 토글
+- **BOM 케이블 명세 모드** — `BOM` 버튼으로 모드 전환. 일괄 입력(수량 장비 자동 행 분리, 케이블 종류 드롭다운) + 개별 편집(더블클릭) + BOM 보기(기성/제작 집계 + CSV 내보내기) (`BomBulkModal`, `BomEdgeModal`, `BomReportModal`)
+- **새로만들기 버튼** — 헤더 `+` 버튼으로 빈 캔버스 생성. 기존 작업 있으면 저장 확인 후 이름 입력 2단계 플로우
+- **장비 DB 프리셋 독립** — 프리셋 불러오기 시 기존 장비 DB 유지, 새 장비만 병합 추가
+- **평행 엣지 교차 개선** — 같은 노드 쌍 연결 복수 엣지(예: SDI+Control 동시 연결)에 방향 인식 오프셋 할당 (Stage 0)
 
 ---
 
@@ -162,10 +166,9 @@ interface Equipment {
 
 ## 다음 개발 우선순위 (Backlog)
 
-1. **BOM 생성** — 배치 장비 + 엣지 기반 케이블 명세서(Bill of Materials) 원클릭 출력
-2. **실시간 협업** — WebSockets 또는 CRDT 기반 동시 편집
-3. **마이크 커버리지 시뮬레이션** — Shure MXA925 등 수음 범위 오버레이 위젯
-4. **클라우드 장비 DB 동기화** — Shure, Crestron, Extron 등 글로벌 벤더 카탈로그 연동
+1. **실시간 협업** — WebSockets 또는 CRDT 기반 동시 편집
+2. **마이크 커버리지 시뮬레이션** — Shure MXA925 등 수음 범위 오버레이 위젯
+3. **클라우드 장비 DB 동기화** — Shure, Crestron, Extron 등 글로벌 벤더 카탈로그 연동
 
 ---
 

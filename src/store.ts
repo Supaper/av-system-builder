@@ -597,11 +597,18 @@ export const useStore = create<AppState>((set, get) => {
     get().saveToHistory();
     const preset = get().presets.find(p => p.id === id);
     if (preset) {
+      // 장비 DB는 기존 목록을 유지하고, 프리셋에 새 장비가 있으면 병합만 수행
+      const currentDB = get().equipmentDB;
+      const existingIds = new Set(currentDB.map(e => e.id));
+      const merged = [
+        ...currentDB,
+        ...preset.equipmentDB.filter(e => !existingIds.has(e.id)),
+      ];
       set({
         nodes: preset.nodes,
         edges: preset.edges.map(e => ({ ...e, animated: false })),
         lineTypes: preset.lineTypes,
-        equipmentDB: preset.equipmentDB.length > 0 ? preset.equipmentDB : get().equipmentDB,
+        equipmentDB: merged,
       });
     }
   },
