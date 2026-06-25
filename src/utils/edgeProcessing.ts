@@ -87,6 +87,49 @@ export function processEdgesWithOffsets(edges: Edge[], nodes: Node[]): Edge[] {
       : Math.abs(info.sourceX - info.targetX) > 5;
 
   const edgeOffsets: Record<string, number> = {};
+  const handled = new Set<string>();
+
+  // ── Stage 0: Same-pair edges (same source AND target node) ────────────────
+  // When multiple edges connect the exact same source→target pair (e.g. SDI +
+  // Control both going from NodeA to NodeB), the offsets must be assigned
+  // direction-aware so the H-V-H routes don't create unnecessary crossings.
+  //
+  // For DOWN (avgDy ≥ 0): sort sourceY DESCENDING so the top-source edge gets
+  // the largest (most positive) offset — its splitX is further right, keeping
+  // its return-horizontal clear of the lower edge's vertical segment.
+  // For UP (avgDy < 0): sort sourceY ASCENDING (top source → smallest offset).
+  const byPair = new Map<string, Edge[]>();
+  edges.forEach(e => {
+    const key = `${e.source}::${e.target}`;
+    if (!byPair.has(key)) byPair.set(key, []);
+    byPair.get(key)!.push(e);
+  });
+  byPair.forEach(group => {
+    const active = group.filter(e => {
+      const info = infoMap.get(e.id);
+      return info && hasSpan(info);
+    });
+    if (active.length < 2) return;
+
+    const avgDy =
+      active.reduce((sum, e) => {
+        const info = infoMap.get(e.id)!;
+        return sum + (info.targetY - info.sourceY);
+      }, 0) / active.length;
+
+    // DOWN: reverse sort → top source gets positive offset (largest splitX)
+    // UP:   normal sort  → top source gets negative offset (smallest splitX)
+    if (avgDy >= 0) {
+      active.sort((a, b) => infoMap.get(b.id)!.sourceY - infoMap.get(a.id)!.sourceY);
+    } else {
+      active.sort((a, b) => infoMap.get(a.id)!.sourceY - infoMap.get(b.id)!.sourceY);
+    }
+    const n = active.length;
+    active.forEach((e, i) => {
+      edgeOffsets[e.id] = (i - (n - 1) / 2) * SPACING;
+      handled.add(e.id);
+    });
+  });
 
   // ── Stage 1: Fan-in (multiple sources → same target node) ─────────────────
   // Correct crossing-free order: sort by sourceY.
@@ -101,7 +144,7 @@ export function processEdgesWithOffsets(edges: Edge[], nodes: Node[]): Edge[] {
   byTarget.forEach(group => {
     const active = group.filter(e => {
       const info = infoMap.get(e.id);
-      return info && hasSpan(info);
+      return info && hasSpan(info) && !handled.has(e.id);
     });
     if (active.length < 2) return;
 
@@ -109,6 +152,7 @@ export function processEdgesWithOffsets(edges: Edge[], nodes: Node[]): Edge[] {
     const n = active.length;
     active.forEach((e, i) => {
       edgeOffsets[e.id] = (i - (n - 1) / 2) * SPACING;
+      handled.add(e.id);
     });
   });
 
@@ -122,7 +166,7 @@ export function processEdgesWithOffsets(edges: Edge[], nodes: Node[]): Edge[] {
   bySource.forEach(group => {
     const active = group.filter(e => {
       const info = infoMap.get(e.id);
-      return info && hasSpan(info) && edgeOffsets[e.id] === undefined;
+      return info && hasSpan(info) && !handled.has(e.id) && edgeOffsets[e.id] === undefined;
     });
     if (active.length < 2) return;
 

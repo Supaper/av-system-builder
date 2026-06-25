@@ -8,7 +8,7 @@ import {
 } from '@xyflow/react';
 import type { Node, Edge } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { Plus, Minus, Maximize, Download, Upload, FileText, LayoutTemplate, Settings, Video, Mic, Cpu, Network, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, FolderOpen, Save, Trash2, Grid, Map, Lock, Unlock, Undo2, Redo2 } from 'lucide-react';
+import { Plus, Minus, Maximize, Download, Upload, FileText, LayoutTemplate, Settings, Video, Mic, Cpu, Network, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, FolderOpen, Save, Trash2, Grid, Map, Lock, Unlock, Undo2, Redo2, ClipboardList } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import jsPDF from 'jspdf';
 
@@ -27,6 +27,9 @@ import { AnnotationNode } from './AnnotationNode';
 import { ShapeNode } from './ShapeNode';
 import { EditAnnotationModal } from './EditAnnotationModal';
 import { EditEdgeModal } from './EditEdgeModal';
+import { BomBulkModal } from './BomBulkModal';
+import { BomEdgeModal } from './BomEdgeModal';
+import { BomReportModal } from './BomReportModal';
 import { LoadPresetModal } from './LoadPresetModal';
 import type { DiagramPreset } from './store';
 import './App.css';
@@ -72,6 +75,20 @@ function FlowBuilder() {
       return !hiddenLineTypeIds.includes(lineTypeId);
     });
   }, [processedEdges, hiddenLineTypeIds, lineTypes]);
+
+  const [isBomMode, setIsBomMode] = useState(false);
+  const [isBomBulkModalOpen, setIsBomBulkModalOpen] = useState(false);
+  const [isBomReportModalOpen, setIsBomReportModalOpen] = useState(false);
+  const [editingBomEdge, setEditingBomEdge] = useState<string | null>(null);
+
+  // BOM 모드일 때 각 엣지 data에 isBomMode 플래그 주입
+  const finalEdges = useMemo(() => {
+    if (!isBomMode) return visibleEdges;
+    return visibleEdges.map(edge => ({
+      ...edge,
+      data: { ...(edge.data as any), isBomMode: true },
+    }));
+  }, [visibleEdges, isBomMode]);
 
   const processedNodes = useMemo(() => {
     const isFilterActive = hiddenLineTypeIds.length > 0;
@@ -191,6 +208,28 @@ function FlowBuilder() {
   const [loadingPreset, setLoadingPreset] = useState<DiagramPreset | null>(null);
   const [editingLineType, setEditingLineType] = useState<any>(null);
   const [isBulkImportModalOpen, setIsBulkImportModalOpen] = useState(false);
+
+  // 새로만들기 상태
+  const [newDiagramStep, setNewDiagramStep] = useState<'idle' | 'confirm' | 'naming'>('idle');
+  const [newSaveName, setNewSaveName] = useState('');
+
+  const handleNewDiagram = () => {
+    if (nodes.length === 0 && edges.length === 0) {
+      setNodes([]); setEdges([]);
+      return;
+    }
+    setNewDiagramStep('confirm');
+  };
+  const confirmNewSave = () => {
+    if (!newSaveName.trim()) return;
+    savePreset(newSaveName.trim());
+    setNodes([]); setEdges([]);
+    setNewDiagramStep('idle'); setNewSaveName('');
+  };
+  const confirmNewDiscard = () => {
+    setNodes([]); setEdges([]);
+    setNewDiagramStep('idle'); setNewSaveName('');
+  };
   
   const [snapToGrid, setSnapToGrid] = useState(false);
   const [showMiniMap, setShowMiniMap] = useState(false);
@@ -307,9 +346,13 @@ function FlowBuilder() {
   }, []);
 
   const onEdgeDoubleClick = useCallback((_: React.MouseEvent, edge: Edge) => {
-    const currentLabel = (edge.data as any)?.label ?? '';
-    setEditingEdge({ id: edge.id, label: currentLabel });
-  }, []);
+    if (isBomMode) {
+      setEditingBomEdge(edge.id);
+    } else {
+      const currentLabel = (edge.data as any)?.label ?? '';
+      setEditingEdge({ id: edge.id, label: currentLabel });
+    }
+  }, [isBomMode]);
 
   const categories: { key: EquipmentCategory; label: string; icon: any }[] = [
     { key: 'video', label: 'Video', icon: Video },
@@ -490,7 +533,15 @@ function FlowBuilder() {
         <div className="header-title">
           <Settings size={14} color="var(--accent-color)" />
           <span>AV System Builder</span>
-          <span className="version-tag">v1.5</span>
+          <span className="version-tag">v1.6</span>
+          <button
+            className="glass-button icon-btn"
+            onClick={handleNewDiagram}
+            title="새 구성도 만들기"
+            style={{ marginLeft: 4, fontSize: 11, padding: '3px 8px', display: 'flex', alignItems: 'center', gap: 4 }}
+          >
+            <Plus size={11} /> New
+          </button>
         </div>
 
         {/* Center Toolbar */}
@@ -597,6 +648,7 @@ function FlowBuilder() {
           >
             <Redo2 size={13} />
           </button>
+
         </div>
 
         {/* Right Actions */}
@@ -875,6 +927,41 @@ function FlowBuilder() {
               </div>
             )}
           </div>
+
+          {/* BOM Section — always rightmost so BOM toggle never shifts when sub-buttons appear */}
+          <div className="control-divider" style={{ height: 18 }} />
+          {isBomMode && (
+            <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+              <button
+                type="button"
+                className="glass-button"
+                onClick={() => setIsBomBulkModalOpen(true)}
+                title="전체 케이블 일괄 입력"
+                style={{ fontSize: 12 }}
+              >
+                <ClipboardList size={13} /> 일괄 입력
+              </button>
+              <button
+                type="button"
+                className="glass-button"
+                onClick={() => setIsBomReportModalOpen(true)}
+                title="케이블 명세서 보기"
+                style={{ fontSize: 12, borderColor: '#34d399', color: '#34d399', background: 'rgba(52,211,153,0.12)' }}
+              >
+                <FileText size={13} /> BOM 보기
+              </button>
+              <div className="control-divider" style={{ height: 18 }} />
+            </div>
+          )}
+          <button
+            type="button"
+            className={`glass-button${isBomMode ? ' primary' : ''}`}
+            onClick={() => setIsBomMode(prev => !prev)}
+            title="BOM 케이블 명세 모드"
+            style={isBomMode ? { borderColor: '#f59e0b', color: '#f59e0b', background: 'rgba(245,158,11,0.15)' } : undefined}
+          >
+            <FileText size={13} /> BOM
+          </button>
         </div>
       </header>
 
@@ -951,7 +1038,7 @@ function FlowBuilder() {
           )}
           <ReactFlow
             nodes={processedNodes}
-            edges={visibleEdges}
+            edges={finalEdges}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
@@ -1059,6 +1146,91 @@ function FlowBuilder() {
           onNewTab={() => handleOpenPresetInNewTab(loadingPreset)}
           onClose={() => setLoadingPreset(null)}
         />
+      )}
+      {isBomBulkModalOpen && (
+        <BomBulkModal onClose={() => setIsBomBulkModalOpen(false)} />
+      )}
+      {editingBomEdge && (
+        <BomEdgeModal edgeId={editingBomEdge} onClose={() => setEditingBomEdge(null)} />
+      )}
+      {isBomReportModalOpen && (
+        <BomReportModal onClose={() => setIsBomReportModalOpen(false)} />
+      )}
+
+      {/* 새로만들기 확인 모달 */}
+      {newDiagramStep !== 'idle' && (
+        <div
+          style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 300, background: 'rgba(0,0,0,0.6)' }}
+          onClick={() => setNewDiagramStep('idle')}
+        >
+          <div
+            className="glass-panel"
+            style={{ width: 380, padding: '22px 24px', borderRadius: 14, display: 'flex', flexDirection: 'column', gap: 16 }}
+            onClick={e => e.stopPropagation()}
+          >
+            {newDiagramStep === 'confirm' ? (
+              <>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700 }}>새 구성도 만들기</h3>
+                  <p style={{ margin: '6px 0 0', fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                    현재 구성도를 저장하지 않으면 작업 내용이 사라집니다.
+                  </p>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <button
+                    className="glass-button primary"
+                    onClick={() => setNewDiagramStep('naming')}
+                    style={{ justifyContent: 'center' }}
+                  >
+                    저장 후 새로만들기
+                  </button>
+                  <button
+                    className="glass-button"
+                    onClick={confirmNewDiscard}
+                    style={{ justifyContent: 'center', color: '#ef4444', borderColor: 'rgba(239,68,68,0.3)' }}
+                  >
+                    저장 안함 (삭제)
+                  </button>
+                  <button
+                    className="glass-button"
+                    onClick={() => setNewDiagramStep('idle')}
+                    style={{ justifyContent: 'center' }}
+                  >
+                    취소
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700 }}>프리셋 이름 입력</h3>
+                  <p style={{ margin: '6px 0 0', fontSize: 12, color: 'var(--text-secondary)' }}>
+                    현재 구성도를 프리셋으로 저장합니다.
+                  </p>
+                </div>
+                <input
+                  className="glass-input"
+                  placeholder="구성도 이름..."
+                  value={newSaveName}
+                  onChange={e => setNewSaveName(e.target.value)}
+                  autoFocus
+                  onKeyDown={e => { if (e.key === 'Enter') confirmNewSave(); if (e.key === 'Escape') setNewDiagramStep('idle'); }}
+                />
+                <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                  <button className="glass-button" onClick={() => setNewDiagramStep('confirm')}>뒤로</button>
+                  <button
+                    className="glass-button primary"
+                    onClick={confirmNewSave}
+                    disabled={!newSaveName.trim()}
+                    style={{ opacity: newSaveName.trim() ? 1 : 0.4 }}
+                  >
+                    저장 후 새로만들기
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

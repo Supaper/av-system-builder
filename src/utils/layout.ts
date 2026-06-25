@@ -1,6 +1,6 @@
 import dagre from 'dagre';
 import type { Node, Edge } from '@xyflow/react';
-import { calculateNodeHeight } from '../store';
+import { calculateNodeHeight, getPortYOffset } from '../store';
 
 const NODE_WIDTH = 220;
 const MIN_NODE_GAP = 24;
@@ -96,9 +96,12 @@ export function getLayoutedElements(nodes: Node[], edges: Edge[], direction = 'L
     if (!nodeMap[n.id]) nodeMap[n.id] = n;
   });
 
-  // Post-process: group nodes into columns and enforce strict minimum vertical gaps.
-  // Deliberately simple — we trust Dagre's Y assignments and only push nodes DOWN to
-  // fix any residual overlap caused by variable node heights.
+  // Post-process: group nodes into columns, then:
+  //   1. Barycenter reorder — sort each column's nodes by the average Y of incoming
+  //      source ports (Sugiyama crossing-minimization heuristic). This fixes the
+  //      common case where Dagre places two fan-out targets in the wrong vertical
+  //      order (e.g. USB Capture above Display when Out 1→Display and Out 2→USB).
+  //   2. Enforce minimum vertical gaps.
   const colThreshold = NODE_WIDTH + 40;
   const columns: Node[][] = [];
   const eqNodesPositioned = newNodes.filter(n => n.type === 'equipment' || !n.type);
@@ -113,10 +116,55 @@ export function getLayoutedElements(nodes: Node[], edges: Edge[], direction = 'L
     else columns.push([node]);
   });
 
+  // Build incoming-edge index for barycenter computation
+  const incomingMap = new Map<string, Array<{ sourceId: string; sourceHandle: string | undefined }>>();
+  edges.forEach(e => {
+    if (!eqIds.has(e.source) || !eqIds.has(e.target)) return;
+    if (!incomingMap.has(e.target)) incomingMap.set(e.target, []);
+    incomingMap.get(e.target)!.push({ sourceId: e.source, sourceHandle: e.sourceHandle ?? undefined });
+  });
+
+  // Sort columns left-to-right and run barycenter sweep (skip first column)
+  const sortedCols = [...columns].sort((a, b) => {
+    const ax = a.reduce((s, n) => s + n.position.x, 0) / a.length;
+    const bx = b.reduce((s, n) => s + n.position.x, 0) / b.length;
+    return ax - bx;
+  });
+
+  sortedCols.forEach((col, ci) => {
+    if (ci === 0 || col.length < 2) return;
+
+    const colAvgX = col.reduce((s, n) => s + n.position.x, 0) / col.length;
+
+    const barycenters = col.map(node => {
+      const incoming = (incomingMap.get(node.id) ?? []).filter(e => {
+        // Only consider sources to the LEFT of this column
+        const src = nodeMap[e.sourceId];
+        return src && src.position.x < colAvgX - colThreshold / 2;
+      });
+      if (incoming.length === 0) return node.position.y;
+      const sum = incoming.reduce((s, e) => {
+        const src = nodeMap[e.sourceId];
+        if (!src) return s;
+        return s + src.position.y + getPortYOffset(src.data as any, e.sourceHandle);
+      }, 0);
+      return sum / incoming.length;
+    });
+
+    // Sort current Y positions and assign them to barycenter-sorted nodes
+    const sortedYs = col.map(n => n.position.y).sort((a, b) => a - b);
+    const sortedByBarycenter = col
+      .map((node, i) => ({ node, barycenter: barycenters[i] }))
+      .sort((a, b) => a.barycenter - b.barycenter);
+
+    sortedByBarycenter.forEach(({ node }, i) => {
+      node.position.y = sortedYs[i];
+    });
+  });
+
+  // Enforce minimum vertical gaps within each column (top-to-bottom)
   columns.forEach(columnNodes => {
     if (columnNodes.length < 2) return;
-
-    // Sort top-to-bottom
     columnNodes.sort((a, b) => a.position.y - b.position.y);
 
     for (let i = 1; i < columnNodes.length; i++) {
@@ -125,10 +173,6 @@ export function getLayoutedElements(nodes: Node[], edges: Edge[], direction = 'L
       const minY = prevBottom + MIN_NODE_GAP;
       if (columnNodes[i].position.y < minY) {
         columnNodes[i].position.y = minY;
-        nodeMap[columnNodes[i].id] = {
-          ...nodeMap[columnNodes[i].id],
-          position: { ...nodeMap[columnNodes[i].id].position, y: minY },
-        };
       }
     }
   });
