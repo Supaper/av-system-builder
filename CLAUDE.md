@@ -157,6 +157,39 @@ Windows 비개발자 환경: `start.bat` 또는 `start_hidden.vbs` 실행
 
 ---
 
+## 개발 환경 정보
+
+- **OS:** Windows 11 Pro
+- **Git 설치 경로:** `C:\Program Files\Git\bin\git.exe`
+- **주의:** PowerShell 새 세션에서 git 명령어가 안 되면 PATH 수동 추가 필요:
+  ```powershell
+  $env:PATH += ";C:\Program Files\Git\bin;C:\Program Files\Git\cmd"
+  ```
+  영구 해결: Windows 환경변수에 `C:\Program Files\Git\cmd` 추가
+
+---
+
+## 인프라 & 배포
+
+### GitHub 저장소
+- **URL:** `https://github.com/Supaper/av-system-builder`
+- **브랜치:** `main`
+- **가시성:** Private (필요 시 Public으로 변경 가능)
+
+### 배포 (예정 — 아직 미완료)
+- **플랫폼:** Vercel 예정
+- **방식:** GitHub 저장소 연결 → `git push`마다 자동 재배포
+- **전제조건:** Vercel 무료 플랜은 Public 저장소 필요
+- StackBlitz는 Vite 8 + React 19 버전 미지원으로 사용 불가 확인됨
+- GitHub Codespaces는 대안으로 사용 가능 (월 120시간 무료)
+
+### 멀티 디바이스 데이터 주의사항
+- 이 앱은 **LocalStorage 기반** → 기기마다 데이터가 독립적으로 저장됨
+- 다른 기기에서 같은 구성도를 열려면 **JSON Export → Import** 방식 사용
+- 진정한 멀티 디바이스 공유는 Backlog의 "실시간 협업" 기능 개발 시 해결
+
+---
+
 ## 릴리즈노트 작성 규칙
 
 기능 추가·수정·버그픽스 작업이 완료될 때마다 **`CHANGELOG.md`** 를 업데이트한다.
