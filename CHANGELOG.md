@@ -18,6 +18,8 @@ Format: `## [vX.Y] — YYYY-MM-DD` / Added · Changed · Fixed · Removed
   - 2층 컨벤션룸 (PTZ×3, DSP BLU-101×3, Logic Controller×2, 구즈넥마이크×28)
   - 관제실 (비디오월 PC×5, VDM-16X 매트릭스, HDBaseT, KVM CS1798×2)
 - **GitHub 저장소 연동** (`https://github.com/Supaper/av-system-builder`)
+- **Git 자동화 스크립트** — `git-start.ps1` (작업 시작, 브랜치 생성) + `git-done.ps1` (커밋·push·PR 오픈)
+- **브랜치 전략 확립** — `main` 직접 push 금지, `local/YYYYMMDD-HHmm` 브랜치 패턴, PR to merge
 
 ### Changed
 - **평행 엣지 알고리즘 재설계** (`edgeProcessing.ts`) — 그래프 컬러링 → 3단계 정렬 기반

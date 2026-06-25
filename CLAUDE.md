@@ -215,31 +215,47 @@ Windows 비개발자 환경: `start.bat` 또는 `start_hidden.vbs` 실행
 ## Git 워크플로
 
 ### 브랜치 전략
-- `main` — 완성된 공식 버전. **직접 push 금지**
-- `claude/epic-*` — Claude가 기능 개발하는 작업 브랜치
-- 작업 완료 후 PR(Pull Request)을 통해 main에 Merge
+- `main` — 완성된 공식 버전. **직접 push 절대 금지**
+- `local/YYYYMMDD-HHmm` — 로컬 VS Code 작업 브랜치 (git-start.ps1이 자동 생성)
+- `claude/epic-*` — 웹 Claude Code 작업 브랜치 (자동 생성)
+- 모든 작업은 위 브랜치에서 진행 → PR → main Merge
 
-### 작업 순서 (Claude Code 공통 — VS Code / 웹 동일)
+### 로컬 VS Code 작업 흐름 (PowerShell 스크립트)
 
-```bash
-# 1. 작업 시작 전: main 최신 내용 확인 후 차이 있으면 풀
-git fetch origin main
-git merge origin/main --no-edit
-
-# 2. 개발 (claude 브랜치에서만)
-# - 기능 단위로 커밋, 메시지는 한국어로
-git add .
-git commit -m "feat: 기능 설명"
-
-# 3. CHANGELOG.md 업데이트 후 같은 커밋 또는 별도 커밋으로 포함
-
-# 4. GitHub에 올리기
-git push -u origin claude/epic-hypatia-xndhhx
-
-# 5. 완료 후 GitHub에서 PR 생성 → 검토 → main에 Merge
+**작업 시작 전:**
+```powershell
+.\git-start.ps1
 ```
+- main을 최신화하고 `local/YYYYMMDD-HHmm` 브랜치 자동 생성
+
+**작업 완료 후:**
+```powershell
+.\git-done.ps1
+# 또는 메시지를 바로 입력할 경우:
+.\git-done.ps1 "feat: 오토레이아웃 개선"
+```
+- 변경사항 커밋 → push → GitHub PR 페이지 자동 오픈
+
+**PR Merge 후 다음 작업:**
+- 다시 `git-start.ps1` 실행 → main을 기준으로 새 브랜치 생성
+
+### 웹 Claude Code 작업 흐름
+- 접속 시 `claude/epic-*` 브랜치 자동 생성됨
+- 작업 완료 후 GitHub에서 PR 생성 → Merge
+- 다음 세션 시작 시 이전 브랜치가 아닌 최신 main 기준으로 시작되는지 확인
+
+### Claude Code (AI) 세션 시작 시 수행 사항
+새 대화 세션을 시작할 때 반드시 아래를 먼저 실행한다:
+```bash
+git fetch origin
+git status
+git log --oneline -5
+```
+- main이 아닌 작업 브랜치에 있는지 확인
+- main에 있으면 `git-start.ps1` 실행을 안내
+- 원격에 미merge 브랜치가 있으면 사용자에게 알림
 
 ### 주의사항
-- `main`에 직접 push하지 않는다
-- 커밋 전 반드시 main과 차이 확인 (`git fetch origin main`)
-- 기능이 완성되지 않은 상태로 push하지 않는다
+- `main`에 직접 커밋·push 하지 않는다
+- 작업 브랜치에서만 커밋한다
+- CHANGELOG.md를 커밋에 항상 포함한다
