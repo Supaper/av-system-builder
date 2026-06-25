@@ -1,0 +1,979 @@
+[
+  {
+    "id": "preset-ds-1f-conference",
+    "name": "DS기흥 1층 컨퍼런스홀",
+    "createdAt": "2026-06-25T00:00:00.000Z",
+    "updatedAt": "2026-06-25T00:00:00.000Z",
+    "lineTypes": [
+      { "id": "sdi",     "name": "SDI",     "color": "#374151" },
+      { "id": "video",   "name": "HDMI",    "color": "#ef4444" },
+      { "id": "network", "name": "LAN",     "color": "#22c55e" },
+      { "id": "audio",   "name": "A.AUDIO", "color": "#a855f7" },
+      { "id": "usb",     "name": "USB",     "color": "#3b82f6" },
+      { "id": "control", "name": "Control", "color": "#f59e0b" }
+    ],
+    "equipmentDB": [],
+    "nodes": [
+      {
+        "id": "n1f_ptz",
+        "type": "equipment",
+        "position": { "x": 50, "y": 200 },
+        "data": {
+          "id": "eq_1f_ptz", "category": "video",
+          "name": "PTZ CAM", "model": "TR315 / POE+ 19W",
+          "quantity": "x3",
+          "inputs": [],
+          "outputs": [
+            { "id": "out-sdi-1", "label": "SDI 1", "type": "video", "direction": "out" },
+            { "id": "out-sdi-2", "label": "SDI 2", "type": "video", "direction": "out" },
+            { "id": "out-sdi-3", "label": "SDI 3", "type": "video", "direction": "out" }
+          ],
+          "bidirectional": [
+            { "id": "both-lan-1", "label": "LAN (PTZ)", "type": "network", "direction": "both" }
+          ]
+        }
+      },
+      {
+        "id": "n1f_vs5",
+        "type": "equipment",
+        "position": { "x": 400, "y": 130 },
+        "data": {
+          "id": "eq_1f_vs5", "category": "video",
+          "name": "비디오 스위처", "model": "VS5",
+          "inputs": [
+            { "id": "in-sdi-1", "label": "SDI In 1", "type": "video", "direction": "in" },
+            { "id": "in-sdi-2", "label": "SDI In 2", "type": "video", "direction": "in" },
+            { "id": "in-sdi-3", "label": "SDI In 3", "type": "video", "direction": "in" }
+          ],
+          "outputs": [
+            { "id": "out-hdmi-1", "label": "HDMI Out", "type": "video", "direction": "out" }
+          ],
+          "bidirectional": [
+            { "id": "both-lan-1", "label": "LAN", "type": "network", "direction": "both" }
+          ]
+        }
+      },
+      {
+        "id": "n1f_uvc",
+        "type": "equipment",
+        "position": { "x": 730, "y": 130 },
+        "data": {
+          "id": "eq_1f_uvc", "category": "video",
+          "name": "USB캡처", "model": "UVC-01",
+          "inputs": [
+            { "id": "in-hdmi-1", "label": "HDMI In", "type": "video", "direction": "in" }
+          ],
+          "outputs": [
+            { "id": "out-usb-1", "label": "USB Out", "type": "network", "direction": "out" }
+          ],
+          "bidirectional": []
+        }
+      },
+      {
+        "id": "n1f_pc_rec",
+        "type": "equipment",
+        "position": { "x": 1020, "y": 130 },
+        "data": {
+          "id": "eq_1f_pc_rec", "category": "control",
+          "name": "PC", "model": "Recording PC",
+          "inputs": [
+            { "id": "in-usb-1", "label": "USB In", "type": "network", "direction": "in" }
+          ],
+          "outputs": [],
+          "bidirectional": []
+        }
+      },
+      {
+        "id": "n1f_hub",
+        "type": "equipment",
+        "position": { "x": 730, "y": 430 },
+        "data": {
+          "id": "eq_1f_hub", "category": "network",
+          "name": "Switching Hub", "model": "GS728TPP 1EA (24포트)",
+          "inputs": [], "outputs": [],
+          "bidirectional": [
+            { "id": "both-lan-1", "label": "LAN 1 (VS5)", "type": "network", "direction": "both" },
+            { "id": "both-lan-2", "label": "LAN 2 (Ctrl)", "type": "network", "direction": "both" },
+            { "id": "both-lan-3", "label": "LAN 3 (DSP)", "type": "network", "direction": "both" },
+            { "id": "both-lan-4", "label": "LAN 4 (PTZ)", "type": "network", "direction": "both" },
+            { "id": "both-lan-5", "label": "LAN 5 (Delegate)", "type": "network", "direction": "both" }
+          ]
+        }
+      },
+      {
+        "id": "n1f_ctrl",
+        "type": "equipment",
+        "position": { "x": 1020, "y": 430 },
+        "data": {
+          "id": "eq_1f_ctrl", "category": "control",
+          "name": "통합제어 컨트롤러", "model": "NX-1200",
+          "isReused": true,
+          "inputs": [], "outputs": [],
+          "bidirectional": [
+            { "id": "both-lan-1", "label": "LAN", "type": "network", "direction": "both" }
+          ]
+        }
+      },
+      {
+        "id": "n1f_delegate",
+        "type": "equipment",
+        "position": { "x": 50, "y": 560 },
+        "data": {
+          "id": "eq_1f_delegate", "category": "audio",
+          "name": "Delegate System", "model": "TELEVIC, D-Cerno",
+          "quantity": "x21ea",
+          "inputs": [],
+          "outputs": [
+            { "id": "out-audio-1", "label": "Audio Out", "type": "audio", "direction": "out" }
+          ],
+          "bidirectional": [
+            { "id": "both-lan-1", "label": "LAN", "type": "network", "direction": "both" }
+          ]
+        }
+      },
+      {
+        "id": "n1f_dsp",
+        "type": "equipment",
+        "position": { "x": 390, "y": 510 },
+        "data": {
+          "id": "eq_1f_dsp", "category": "audio",
+          "name": "DSP", "model": "BLU-50v2",
+          "isReused": true,
+          "inputs": [
+            { "id": "in-audio-1", "label": "In 1 (Delegate)", "type": "audio", "direction": "in" },
+            { "id": "in-audio-2", "label": "In 2 (Wireless)", "type": "audio", "direction": "in" },
+            { "id": "in-audio-3", "label": "In 3 (PC)", "type": "audio", "direction": "in" }
+          ],
+          "outputs": [
+            { "id": "out-audio-1", "label": "Out (2ch)", "type": "audio", "direction": "out" }
+          ],
+          "bidirectional": [
+            { "id": "both-lan-1", "label": "LAN", "type": "network", "direction": "both" }
+          ]
+        }
+      },
+      {
+        "id": "n1f_wireless",
+        "type": "equipment",
+        "position": { "x": 50, "y": 730 },
+        "data": {
+          "id": "eq_1f_wireless", "category": "audio",
+          "name": "무선마이크", "model": "2CH",
+          "inputs": [],
+          "outputs": [
+            { "id": "out-audio-1", "label": "Audio Out", "type": "audio", "direction": "out" }
+          ],
+          "bidirectional": []
+        }
+      },
+      {
+        "id": "n1f_pc_audio",
+        "type": "equipment",
+        "position": { "x": 50, "y": 870 },
+        "data": {
+          "id": "eq_1f_pc_audio", "category": "control",
+          "name": "PC", "model": "Desktop PC",
+          "inputs": [],
+          "outputs": [
+            { "id": "out-audio-1", "label": "Audio Out", "type": "audio", "direction": "out" }
+          ],
+          "bidirectional": []
+        }
+      },
+      {
+        "id": "n1f_amp",
+        "type": "equipment",
+        "position": { "x": 720, "y": 660 },
+        "data": {
+          "id": "eq_1f_amp", "category": "audio",
+          "name": "AMP", "model": "Power Amplifier",
+          "inputs": [
+            { "id": "in-audio-1", "label": "In", "type": "audio", "direction": "in" }
+          ],
+          "outputs": [
+            { "id": "out-audio-1", "label": "Speaker Out", "type": "audio", "direction": "out" }
+          ],
+          "bidirectional": []
+        }
+      },
+      {
+        "id": "n1f_spk",
+        "type": "equipment",
+        "position": { "x": 1020, "y": 660 },
+        "data": {
+          "id": "eq_1f_spk", "category": "audio",
+          "name": "CEILING SPEAKER", "model": "Ceiling Speaker",
+          "inputs": [
+            { "id": "in-audio-1", "label": "In", "type": "audio", "direction": "in" }
+          ],
+          "outputs": [],
+          "bidirectional": []
+        }
+      },
+      {
+        "id": "n1f_note_translate",
+        "type": "annotation",
+        "position": { "x": 280, "y": 810 },
+        "style": { "width": 220, "height": 48 },
+        "data": {
+          "label": "추후 동시 통역 사용 가능",
+          "fontSize": 12, "fontColor": "#94a3b8",
+          "bgColor": "#1e293b", "bgOpacity": 0.6,
+          "borderColor": "#475569", "borderStyle": "dashed",
+          "borderRadius": 6, "textAlign": "center"
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "e_ptz_vs5_1", "type": "customSmoothstep",
+        "source": "n1f_ptz", "sourceHandle": "out-sdi-1",
+        "target": "n1f_vs5", "targetHandle": "in-sdi-1",
+        "style": { "stroke": "#374151", "strokeWidth": 2.5 },
+        "data": { "lineTypeId": "sdi" }
+      },
+      {
+        "id": "e_ptz_vs5_2", "type": "customSmoothstep",
+        "source": "n1f_ptz", "sourceHandle": "out-sdi-2",
+        "target": "n1f_vs5", "targetHandle": "in-sdi-2",
+        "style": { "stroke": "#374151", "strokeWidth": 2.5 },
+        "data": { "lineTypeId": "sdi" }
+      },
+      {
+        "id": "e_ptz_vs5_3", "type": "customSmoothstep",
+        "source": "n1f_ptz", "sourceHandle": "out-sdi-3",
+        "target": "n1f_vs5", "targetHandle": "in-sdi-3",
+        "style": { "stroke": "#374151", "strokeWidth": 2.5 },
+        "data": { "lineTypeId": "sdi", "label": "SDI ×3" }
+      },
+      {
+        "id": "e_vs5_uvc", "type": "customSmoothstep",
+        "source": "n1f_vs5", "sourceHandle": "out-hdmi-1",
+        "target": "n1f_uvc", "targetHandle": "in-hdmi-1",
+        "style": { "stroke": "#ef4444", "strokeWidth": 2 },
+        "data": { "lineTypeId": "video", "label": "HDMI" }
+      },
+      {
+        "id": "e_uvc_pc", "type": "customSmoothstep",
+        "source": "n1f_uvc", "sourceHandle": "out-usb-1",
+        "target": "n1f_pc_rec", "targetHandle": "in-usb-1",
+        "style": { "stroke": "#3b82f6", "strokeWidth": 2 },
+        "data": { "lineTypeId": "usb", "label": "USB" }
+      },
+      {
+        "id": "e_vs5_hub", "type": "customSmoothstep",
+        "source": "n1f_vs5", "sourceHandle": "source_both-lan-1",
+        "target": "n1f_hub", "targetHandle": "target_both-lan-1",
+        "style": { "stroke": "#22c55e", "strokeWidth": 2 },
+        "data": { "lineTypeId": "network" }
+      },
+      {
+        "id": "e_ptz_hub", "type": "customSmoothstep",
+        "source": "n1f_ptz", "sourceHandle": "source_both-lan-1",
+        "target": "n1f_hub", "targetHandle": "target_both-lan-4",
+        "style": { "stroke": "#22c55e", "strokeWidth": 2 },
+        "data": { "lineTypeId": "network", "label": "PTZ Control" }
+      },
+      {
+        "id": "e_hub_ctrl", "type": "customSmoothstep",
+        "source": "n1f_hub", "sourceHandle": "source_both-lan-2",
+        "target": "n1f_ctrl", "targetHandle": "target_both-lan-1",
+        "style": { "stroke": "#22c55e", "strokeWidth": 2 },
+        "data": { "lineTypeId": "network" }
+      },
+      {
+        "id": "e_hub_dsp", "type": "customSmoothstep",
+        "source": "n1f_hub", "sourceHandle": "source_both-lan-3",
+        "target": "n1f_dsp", "targetHandle": "target_both-lan-1",
+        "style": { "stroke": "#22c55e", "strokeWidth": 2 },
+        "data": { "lineTypeId": "network" }
+      },
+      {
+        "id": "e_delegate_dsp", "type": "customSmoothstep",
+        "source": "n1f_delegate", "sourceHandle": "out-audio-1",
+        "target": "n1f_dsp", "targetHandle": "in-audio-1",
+        "style": { "stroke": "#a855f7", "strokeWidth": 2 },
+        "data": { "lineTypeId": "audio" }
+      },
+      {
+        "id": "e_wireless_dsp", "type": "customSmoothstep",
+        "source": "n1f_wireless", "sourceHandle": "out-audio-1",
+        "target": "n1f_dsp", "targetHandle": "in-audio-2",
+        "style": { "stroke": "#a855f7", "strokeWidth": 2 },
+        "data": { "lineTypeId": "audio" }
+      },
+      {
+        "id": "e_pcaudio_dsp", "type": "customSmoothstep",
+        "source": "n1f_pc_audio", "sourceHandle": "out-audio-1",
+        "target": "n1f_dsp", "targetHandle": "in-audio-3",
+        "style": { "stroke": "#a855f7", "strokeWidth": 2 },
+        "data": { "lineTypeId": "audio" }
+      },
+      {
+        "id": "e_dsp_amp", "type": "customSmoothstep",
+        "source": "n1f_dsp", "sourceHandle": "out-audio-1",
+        "target": "n1f_amp", "targetHandle": "in-audio-1",
+        "style": { "stroke": "#a855f7", "strokeWidth": 2 },
+        "data": { "lineTypeId": "audio", "label": "2ch" }
+      },
+      {
+        "id": "e_amp_spk", "type": "customSmoothstep",
+        "source": "n1f_amp", "sourceHandle": "out-audio-1",
+        "target": "n1f_spk", "targetHandle": "in-audio-1",
+        "style": { "stroke": "#a855f7", "strokeWidth": 2 },
+        "data": { "lineTypeId": "audio" }
+      },
+      {
+        "id": "e_delegate_hub", "type": "customSmoothstep",
+        "source": "n1f_delegate", "sourceHandle": "source_both-lan-1",
+        "target": "n1f_hub", "targetHandle": "target_both-lan-5",
+        "style": { "stroke": "#22c55e", "strokeWidth": 1.5 },
+        "data": { "lineTypeId": "network" }
+      }
+    ]
+  },
+  {
+    "id": "preset-ds-2f-convention",
+    "name": "DS기흥 2층 컨벤션룸",
+    "createdAt": "2026-06-25T00:00:00.000Z",
+    "updatedAt": "2026-06-25T00:00:00.000Z",
+    "lineTypes": [
+      { "id": "sdi",     "name": "SDI",     "color": "#374151" },
+      { "id": "video",   "name": "HDMI",    "color": "#ef4444" },
+      { "id": "network", "name": "LAN",     "color": "#22c55e" },
+      { "id": "audio",   "name": "A.AUDIO", "color": "#a855f7" },
+      { "id": "usb",     "name": "USB",     "color": "#3b82f6" },
+      { "id": "control", "name": "Control", "color": "#f59e0b" }
+    ],
+    "equipmentDB": [],
+    "nodes": [
+      {
+        "id": "n2f_ptz",
+        "type": "equipment",
+        "position": { "x": 80, "y": 180 },
+        "data": {
+          "id": "eq_2f_ptz", "category": "video",
+          "name": "PTZ CAM", "model": "TR315 / POE+ 19W",
+          "quantity": "x3",
+          "inputs": [],
+          "outputs": [
+            { "id": "out-sdi-1", "label": "SDI 1", "type": "video", "direction": "out" },
+            { "id": "out-sdi-2", "label": "SDI 2", "type": "video", "direction": "out" },
+            { "id": "out-sdi-3", "label": "SDI 3", "type": "video", "direction": "out" }
+          ],
+          "bidirectional": [
+            { "id": "both-lan-1", "label": "LAN (PTZ)", "type": "network", "direction": "both" }
+          ]
+        }
+      },
+      {
+        "id": "n2f_vs5",
+        "type": "equipment",
+        "position": { "x": 420, "y": 110 },
+        "data": {
+          "id": "eq_2f_vs5", "category": "video",
+          "name": "비디오 스위처", "model": "VS5",
+          "inputs": [
+            { "id": "in-sdi-1", "label": "SDI In 1", "type": "video", "direction": "in" },
+            { "id": "in-sdi-2", "label": "SDI In 2", "type": "video", "direction": "in" },
+            { "id": "in-sdi-3", "label": "SDI In 3", "type": "video", "direction": "in" }
+          ],
+          "outputs": [
+            { "id": "out-hdmi-1", "label": "HDMI Out", "type": "video", "direction": "out" }
+          ],
+          "bidirectional": [
+            { "id": "both-lan-1", "label": "LAN", "type": "network", "direction": "both" }
+          ]
+        }
+      },
+      {
+        "id": "n2f_uvc",
+        "type": "equipment",
+        "position": { "x": 740, "y": 110 },
+        "data": {
+          "id": "eq_2f_uvc", "category": "video",
+          "name": "USB캡처", "model": "UVC-01",
+          "inputs": [
+            { "id": "in-hdmi-1", "label": "HDMI In", "type": "video", "direction": "in" }
+          ],
+          "outputs": [
+            { "id": "out-usb-1", "label": "USB Out", "type": "network", "direction": "out" }
+          ],
+          "bidirectional": []
+        }
+      },
+      {
+        "id": "n2f_pc",
+        "type": "equipment",
+        "position": { "x": 1040, "y": 110 },
+        "data": {
+          "id": "eq_2f_pc", "category": "control",
+          "name": "PC", "model": "Recording PC",
+          "inputs": [
+            { "id": "in-usb-1", "label": "USB In", "type": "network", "direction": "in" }
+          ],
+          "outputs": [],
+          "bidirectional": []
+        }
+      },
+      {
+        "id": "n2f_poehub",
+        "type": "equipment",
+        "position": { "x": 790, "y": 490 },
+        "data": {
+          "id": "eq_2f_poehub", "category": "network",
+          "name": "Switching Hub", "model": "GSM4230P (POE 허브)",
+          "inputs": [], "outputs": [],
+          "bidirectional": [
+            { "id": "both-lan-1", "label": "LAN 1 (VS5)", "type": "network", "direction": "both" },
+            { "id": "both-lan-2", "label": "LAN 2 (PTZ)", "type": "network", "direction": "both" },
+            { "id": "both-lan-3", "label": "LAN 3 (DSP)", "type": "network", "direction": "both" },
+            { "id": "both-lan-4", "label": "LAN 4 (Logic)", "type": "network", "direction": "both" },
+            { "id": "both-lan-5", "label": "LAN 5", "type": "network", "direction": "both" }
+          ]
+        }
+      },
+      {
+        "id": "n2f_ctrl",
+        "type": "equipment",
+        "position": { "x": 1040, "y": 490 },
+        "data": {
+          "id": "eq_2f_ctrl", "category": "control",
+          "name": "통합제어 컨트롤러", "model": "NX-1200",
+          "inputs": [], "outputs": [],
+          "bidirectional": [
+            { "id": "both-lan-1", "label": "LAN", "type": "network", "direction": "both" }
+          ]
+        }
+      },
+      {
+        "id": "n2f_dsp",
+        "type": "equipment",
+        "position": { "x": 320, "y": 470 },
+        "data": {
+          "id": "eq_2f_dsp", "category": "audio",
+          "name": "DSP", "model": "BLU-101",
+          "quantity": "x3",
+          "inputs": [
+            { "id": "in-audio-1", "label": "In 1", "type": "audio", "direction": "in" },
+            { "id": "in-audio-2", "label": "In 2", "type": "audio", "direction": "in" }
+          ],
+          "outputs": [
+            { "id": "out-audio-1", "label": "Out 1", "type": "audio", "direction": "out" }
+          ],
+          "bidirectional": [
+            { "id": "both-lan-1", "label": "LAN", "type": "network", "direction": "both" }
+          ]
+        }
+      },
+      {
+        "id": "n2f_logic",
+        "type": "equipment",
+        "position": { "x": 320, "y": 700 },
+        "data": {
+          "id": "eq_2f_logic", "category": "control",
+          "name": "Logic Controller", "model": "MPCMPC",
+          "quantity": "x2",
+          "inputs": [
+            { "id": "in-audio-1", "label": "Mic In", "type": "audio", "direction": "in" }
+          ],
+          "outputs": [
+            { "id": "out-audio-1", "label": "Audio Out", "type": "audio", "direction": "out" }
+          ],
+          "bidirectional": [
+            { "id": "both-lan-1", "label": "LAN", "type": "network", "direction": "both" }
+          ]
+        }
+      },
+      {
+        "id": "n2f_mic",
+        "type": "equipment",
+        "position": { "x": 50, "y": 580 },
+        "data": {
+          "id": "eq_2f_mic", "category": "audio",
+          "name": "구즈넥 마이크", "model": "MX418DC",
+          "quantity": "x28",
+          "inputs": [],
+          "outputs": [
+            { "id": "out-audio-1", "label": "Audio Out", "type": "audio", "direction": "out" }
+          ],
+          "bidirectional": []
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "e_2f_ptz_vs5_1", "type": "customSmoothstep",
+        "source": "n2f_ptz", "sourceHandle": "out-sdi-1",
+        "target": "n2f_vs5", "targetHandle": "in-sdi-1",
+        "style": { "stroke": "#374151", "strokeWidth": 2.5 },
+        "data": { "lineTypeId": "sdi" }
+      },
+      {
+        "id": "e_2f_ptz_vs5_2", "type": "customSmoothstep",
+        "source": "n2f_ptz", "sourceHandle": "out-sdi-2",
+        "target": "n2f_vs5", "targetHandle": "in-sdi-2",
+        "style": { "stroke": "#374151", "strokeWidth": 2.5 },
+        "data": { "lineTypeId": "sdi" }
+      },
+      {
+        "id": "e_2f_ptz_vs5_3", "type": "customSmoothstep",
+        "source": "n2f_ptz", "sourceHandle": "out-sdi-3",
+        "target": "n2f_vs5", "targetHandle": "in-sdi-3",
+        "style": { "stroke": "#374151", "strokeWidth": 2.5 },
+        "data": { "lineTypeId": "sdi", "label": "SDI ×3" }
+      },
+      {
+        "id": "e_2f_vs5_uvc", "type": "customSmoothstep",
+        "source": "n2f_vs5", "sourceHandle": "out-hdmi-1",
+        "target": "n2f_uvc", "targetHandle": "in-hdmi-1",
+        "style": { "stroke": "#ef4444", "strokeWidth": 2 },
+        "data": { "lineTypeId": "video", "label": "HDMI" }
+      },
+      {
+        "id": "e_2f_uvc_pc", "type": "customSmoothstep",
+        "source": "n2f_uvc", "sourceHandle": "out-usb-1",
+        "target": "n2f_pc", "targetHandle": "in-usb-1",
+        "style": { "stroke": "#3b82f6", "strokeWidth": 2 },
+        "data": { "lineTypeId": "usb", "label": "USB" }
+      },
+      {
+        "id": "e_2f_vs5_hub", "type": "customSmoothstep",
+        "source": "n2f_vs5", "sourceHandle": "source_both-lan-1",
+        "target": "n2f_poehub", "targetHandle": "target_both-lan-1",
+        "style": { "stroke": "#22c55e", "strokeWidth": 2 },
+        "data": { "lineTypeId": "network" }
+      },
+      {
+        "id": "e_2f_ptz_hub", "type": "customSmoothstep",
+        "source": "n2f_ptz", "sourceHandle": "source_both-lan-1",
+        "target": "n2f_poehub", "targetHandle": "target_both-lan-2",
+        "style": { "stroke": "#22c55e", "strokeWidth": 2 },
+        "data": { "lineTypeId": "network", "label": "PTZ Control" }
+      },
+      {
+        "id": "e_2f_hub_ctrl", "type": "customSmoothstep",
+        "source": "n2f_poehub", "sourceHandle": "source_both-lan-5",
+        "target": "n2f_ctrl", "targetHandle": "target_both-lan-1",
+        "style": { "stroke": "#22c55e", "strokeWidth": 2 },
+        "data": { "lineTypeId": "network" }
+      },
+      {
+        "id": "e_2f_hub_dsp", "type": "customSmoothstep",
+        "source": "n2f_poehub", "sourceHandle": "source_both-lan-3",
+        "target": "n2f_dsp", "targetHandle": "target_both-lan-1",
+        "style": { "stroke": "#22c55e", "strokeWidth": 2 },
+        "data": { "lineTypeId": "network" }
+      },
+      {
+        "id": "e_2f_hub_logic", "type": "customSmoothstep",
+        "source": "n2f_poehub", "sourceHandle": "source_both-lan-4",
+        "target": "n2f_logic", "targetHandle": "target_both-lan-1",
+        "style": { "stroke": "#22c55e", "strokeWidth": 2 },
+        "data": { "lineTypeId": "network" }
+      },
+      {
+        "id": "e_2f_mic_logic", "type": "customSmoothstep",
+        "source": "n2f_mic", "sourceHandle": "out-audio-1",
+        "target": "n2f_logic", "targetHandle": "in-audio-1",
+        "style": { "stroke": "#a855f7", "strokeWidth": 2 },
+        "data": { "lineTypeId": "audio", "label": "×28" }
+      },
+      {
+        "id": "e_2f_logic_dsp", "type": "customSmoothstep",
+        "source": "n2f_logic", "sourceHandle": "out-audio-1",
+        "target": "n2f_dsp", "targetHandle": "in-audio-1",
+        "style": { "stroke": "#a855f7", "strokeWidth": 2 },
+        "data": { "lineTypeId": "audio" }
+      }
+    ]
+  },
+  {
+    "id": "preset-ds-control-room",
+    "name": "DS기흥 관제실",
+    "createdAt": "2026-06-25T00:00:00.000Z",
+    "updatedAt": "2026-06-25T00:00:00.000Z",
+    "lineTypes": [
+      { "id": "sdi",     "name": "SDI",     "color": "#374151" },
+      { "id": "video",   "name": "HDMI",    "color": "#ef4444" },
+      { "id": "network", "name": "LAN",     "color": "#22c55e" },
+      { "id": "audio",   "name": "A.AUDIO", "color": "#a855f7" },
+      { "id": "usb",     "name": "USB",     "color": "#3b82f6" },
+      { "id": "control", "name": "Control", "color": "#f59e0b" }
+    ],
+    "equipmentDB": [],
+    "nodes": [
+      {
+        "id": "ncr_pc_h",
+        "type": "equipment",
+        "position": { "x": 30, "y": 100 },
+        "data": {
+          "id": "eq_cr_pc_h", "category": "video",
+          "name": "비디오월(가로) PC", "model": "Desktop PC",
+          "quantity": "4EA",
+          "inputs": [],
+          "outputs": [
+            { "id": "out-hdmi-1", "label": "HDMI 1", "type": "video", "direction": "out" },
+            { "id": "out-hdmi-2", "label": "HDMI 2", "type": "video", "direction": "out" },
+            { "id": "out-hdmi-3", "label": "HDMI 3", "type": "video", "direction": "out" },
+            { "id": "out-hdmi-4", "label": "HDMI 4", "type": "video", "direction": "out" },
+            { "id": "out-hdmi-5", "label": "HDMI 5", "type": "video", "direction": "out" },
+            { "id": "out-hdmi-6", "label": "HDMI 6", "type": "video", "direction": "out" },
+            { "id": "out-hdmi-7", "label": "HDMI 7", "type": "video", "direction": "out" },
+            { "id": "out-hdmi-8", "label": "HDMI 8", "type": "video", "direction": "out" }
+          ],
+          "bidirectional": []
+        }
+      },
+      {
+        "id": "ncr_pc_v",
+        "type": "equipment",
+        "position": { "x": 30, "y": 630 },
+        "data": {
+          "id": "eq_cr_pc_v", "category": "video",
+          "name": "비디오월(세로) PC", "model": "Desktop PC",
+          "quantity": "1EA",
+          "inputs": [],
+          "outputs": [
+            { "id": "out-hdmi-1", "label": "HDMI 1", "type": "video", "direction": "out" },
+            { "id": "out-hdmi-2", "label": "HDMI 2", "type": "video", "direction": "out" }
+          ],
+          "bidirectional": []
+        }
+      },
+      {
+        "id": "ncr_splitter",
+        "type": "equipment",
+        "position": { "x": 330, "y": 330 },
+        "data": {
+          "id": "eq_cr_splitter", "category": "video",
+          "name": "2분배기", "model": "2-Way Splitter",
+          "quantity": "10EA",
+          "inputs": [
+            { "id": "in-hdmi-1", "label": "In 1~8", "type": "video", "direction": "in" },
+            { "id": "in-hdmi-2", "label": "In 9~10", "type": "video", "direction": "in" }
+          ],
+          "outputs": [
+            { "id": "out-a-1", "label": "Out A (→Matrix)", "type": "video", "direction": "out" },
+            { "id": "out-b-1", "label": "Out B (→KVM)", "type": "video", "direction": "out" }
+          ],
+          "bidirectional": []
+        }
+      },
+      {
+        "id": "ncr_matrix",
+        "type": "equipment",
+        "position": { "x": 600, "y": 130 },
+        "data": {
+          "id": "eq_cr_matrix", "category": "video",
+          "name": "비디오 매트릭스", "model": "VDM-16X (HIS4 3EA / HOS4S 3EA)",
+          "inputs": [
+            { "id": "in-hdmi-1", "label": "In 1~10", "type": "video", "direction": "in" }
+          ],
+          "outputs": [
+            { "id": "out-wall", "label": "Out (→가로벽)", "type": "video", "direction": "out" },
+            { "id": "out-ct",   "label": "Out (→CT-104)", "type": "video", "direction": "out" }
+          ],
+          "bidirectional": []
+        }
+      },
+      {
+        "id": "ncr_wall_h",
+        "type": "equipment",
+        "position": { "x": 950, "y": 30 },
+        "data": {
+          "id": "eq_cr_wall_h", "category": "video",
+          "name": "비디오월 (가로) 2×4", "model": "LH55VHCRBGBXKR",
+          "isReused": true,
+          "inputs": [
+            { "id": "in-hdmi-1", "label": "In (8CH)", "type": "video", "direction": "in" }
+          ],
+          "outputs": [],
+          "bidirectional": []
+        }
+      },
+      {
+        "id": "ncr_ct_tx",
+        "type": "equipment",
+        "position": { "x": 870, "y": 350 },
+        "data": {
+          "id": "eq_cr_ct_tx", "category": "control",
+          "name": "CT-104-U TX", "model": "HDBaseT Transmitter",
+          "inputs": [
+            { "id": "in-hdmi-1", "label": "HDMI In", "type": "video", "direction": "in" }
+          ],
+          "outputs": [
+            { "id": "out-lan-1", "label": "HDBaseT Out", "type": "network", "direction": "out" }
+          ],
+          "bidirectional": []
+        }
+      },
+      {
+        "id": "ncr_ct_rx",
+        "type": "equipment",
+        "position": { "x": 1090, "y": 350 },
+        "data": {
+          "id": "eq_cr_ct_rx", "category": "control",
+          "name": "CT-104-U RX", "model": "HDBaseT Receiver",
+          "inputs": [
+            { "id": "in-lan-1", "label": "HDBaseT In", "type": "network", "direction": "in" }
+          ],
+          "outputs": [
+            { "id": "out-hdmi-1", "label": "HDMI Out", "type": "video", "direction": "out" }
+          ],
+          "bidirectional": []
+        }
+      },
+      {
+        "id": "ncr_dist4",
+        "type": "equipment",
+        "position": { "x": 1310, "y": 350 },
+        "data": {
+          "id": "eq_cr_dist4", "category": "video",
+          "name": "4분배기", "model": "4-Way HDMI Splitter",
+          "inputs": [
+            { "id": "in-hdmi-1", "label": "In (2CH)", "type": "video", "direction": "in" }
+          ],
+          "outputs": [
+            { "id": "out-hdmi-1", "label": "Out 1~6", "type": "video", "direction": "out" }
+          ],
+          "bidirectional": []
+        }
+      },
+      {
+        "id": "ncr_wall_v",
+        "type": "equipment",
+        "position": { "x": 1550, "y": 280 },
+        "data": {
+          "id": "eq_cr_wall_v", "category": "video",
+          "name": "비디오월 (세로) 1×3", "model": "LH55VMTEBGBXKR",
+          "isReused": true,
+          "inputs": [
+            { "id": "in-hdmi-1", "label": "In (6CH)", "type": "video", "direction": "in" }
+          ],
+          "outputs": [],
+          "bidirectional": []
+        }
+      },
+      {
+        "id": "ncr_kvm1",
+        "type": "equipment",
+        "position": { "x": 610, "y": 550 },
+        "data": {
+          "id": "eq_cr_kvm1", "category": "control",
+          "name": "KVM Switch #1", "model": "CS1798 (HDMI 8포트)",
+          "inputs": [
+            { "id": "in-hdmi-1", "label": "HDMI In (5CH)", "type": "video", "direction": "in" }
+          ],
+          "outputs": [
+            { "id": "out-hdmi-1", "label": "HDMI Out", "type": "video", "direction": "out" }
+          ],
+          "bidirectional": [
+            { "id": "both-usb-1", "label": "USB Console", "type": "network", "direction": "both" }
+          ]
+        }
+      },
+      {
+        "id": "ncr_kvm2",
+        "type": "equipment",
+        "position": { "x": 610, "y": 740 },
+        "data": {
+          "id": "eq_cr_kvm2", "category": "control",
+          "name": "KVM Switch #2", "model": "CS1798 (HDMI 8포트)",
+          "inputs": [
+            { "id": "in-hdmi-1", "label": "HDMI In (5CH)", "type": "video", "direction": "in" }
+          ],
+          "outputs": [
+            { "id": "out-hdmi-1", "label": "HDMI Out", "type": "video", "direction": "out" }
+          ],
+          "bidirectional": [
+            { "id": "both-usb-1", "label": "USB Console", "type": "network", "direction": "both" }
+          ]
+        }
+      },
+      {
+        "id": "ncr_kvm_tx",
+        "type": "equipment",
+        "position": { "x": 920, "y": 620 },
+        "data": {
+          "id": "eq_cr_kvm_tx", "category": "control",
+          "name": "KVM 연장기 TX", "model": "CE824",
+          "inputs": [
+            { "id": "in-hdmi-1", "label": "HDMI In 1", "type": "video", "direction": "in" },
+            { "id": "in-hdmi-2", "label": "HDMI In 2", "type": "video", "direction": "in" }
+          ],
+          "outputs": [
+            { "id": "out-lan-1", "label": "CATx Out", "type": "network", "direction": "out" }
+          ],
+          "bidirectional": [
+            { "id": "both-usb-1", "label": "USB", "type": "network", "direction": "both" }
+          ]
+        }
+      },
+      {
+        "id": "ncr_kvm_rx",
+        "type": "equipment",
+        "position": { "x": 1190, "y": 620 },
+        "data": {
+          "id": "eq_cr_kvm_rx", "category": "control",
+          "name": "KVM 연장기 RX", "model": "CE824",
+          "inputs": [
+            { "id": "in-lan-1", "label": "CATx In", "type": "network", "direction": "in" }
+          ],
+          "outputs": [
+            { "id": "out-hdmi-1", "label": "HDMI Out", "type": "video", "direction": "out" },
+            { "id": "out-hdmi-2", "label": "HDMI Out 2", "type": "video", "direction": "out" }
+          ],
+          "bidirectional": [
+            { "id": "both-usb-1", "label": "USB", "type": "network", "direction": "both" }
+          ]
+        }
+      },
+      {
+        "id": "ncr_monitor",
+        "type": "equipment",
+        "position": { "x": 1480, "y": 580 },
+        "data": {
+          "id": "eq_cr_monitor", "category": "video",
+          "name": "24인치 모니터", "model": "2EA + 유선 키보드마우스",
+          "quantity": "2EA",
+          "inputs": [
+            { "id": "in-hdmi-1", "label": "HDMI In 1", "type": "video", "direction": "in" },
+            { "id": "in-hdmi-2", "label": "HDMI In 2", "type": "video", "direction": "in" }
+          ],
+          "outputs": [],
+          "bidirectional": [
+            { "id": "both-usb-1", "label": "USB (KB/Mouse)", "type": "network", "direction": "both" }
+          ]
+        }
+      },
+      {
+        "id": "ncr_note_kvm",
+        "type": "annotation",
+        "position": { "x": 560, "y": 920 },
+        "style": { "width": 340, "height": 70 },
+        "data": {
+          "label": "모드: 멀티뷰모드 설정\n1번 장비 8번포트 USB → 2번장비 콘솔포트\n*ATEN 세팅지원 필요",
+          "fontSize": 11, "fontColor": "#94a3b8",
+          "bgColor": "#1e293b", "bgOpacity": 0.6,
+          "borderColor": "#475569", "borderStyle": "dashed",
+          "borderRadius": 6, "textAlign": "left"
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "e_cr_pch_spl", "type": "customSmoothstep",
+        "source": "ncr_pc_h", "sourceHandle": "out-hdmi-1",
+        "target": "ncr_splitter", "targetHandle": "in-hdmi-1",
+        "style": { "stroke": "#ef4444", "strokeWidth": 2.5 },
+        "data": { "lineTypeId": "video", "label": "8CH" }
+      },
+      {
+        "id": "e_cr_pcv_spl", "type": "customSmoothstep",
+        "source": "ncr_pc_v", "sourceHandle": "out-hdmi-1",
+        "target": "ncr_splitter", "targetHandle": "in-hdmi-2",
+        "style": { "stroke": "#ef4444", "strokeWidth": 2.5 },
+        "data": { "lineTypeId": "video", "label": "2CH" }
+      },
+      {
+        "id": "e_cr_spl_matrix", "type": "customSmoothstep",
+        "source": "ncr_splitter", "sourceHandle": "out-a-1",
+        "target": "ncr_matrix", "targetHandle": "in-hdmi-1",
+        "style": { "stroke": "#ef4444", "strokeWidth": 2.5 },
+        "data": { "lineTypeId": "video", "label": "10CH" }
+      },
+      {
+        "id": "e_cr_matrix_wallh", "type": "customSmoothstep",
+        "source": "ncr_matrix", "sourceHandle": "out-wall",
+        "target": "ncr_wall_h", "targetHandle": "in-hdmi-1",
+        "style": { "stroke": "#ef4444", "strokeWidth": 2.5 },
+        "data": { "lineTypeId": "video", "label": "8CH" }
+      },
+      {
+        "id": "e_cr_matrix_ct", "type": "customSmoothstep",
+        "source": "ncr_matrix", "sourceHandle": "out-ct",
+        "target": "ncr_ct_tx", "targetHandle": "in-hdmi-1",
+        "style": { "stroke": "#ef4444", "strokeWidth": 2 },
+        "data": { "lineTypeId": "video", "label": "2CH" }
+      },
+      {
+        "id": "e_cr_ct_tx_rx", "type": "customSmoothstep",
+        "source": "ncr_ct_tx", "sourceHandle": "out-lan-1",
+        "target": "ncr_ct_rx", "targetHandle": "in-lan-1",
+        "style": { "stroke": "#22c55e", "strokeWidth": 2 },
+        "data": { "lineTypeId": "network", "label": "HDBaseT" }
+      },
+      {
+        "id": "e_cr_ct_rx_dist", "type": "customSmoothstep",
+        "source": "ncr_ct_rx", "sourceHandle": "out-hdmi-1",
+        "target": "ncr_dist4", "targetHandle": "in-hdmi-1",
+        "style": { "stroke": "#ef4444", "strokeWidth": 2 },
+        "data": { "lineTypeId": "video", "label": "2CH" }
+      },
+      {
+        "id": "e_cr_dist_wallv", "type": "customSmoothstep",
+        "source": "ncr_dist4", "sourceHandle": "out-hdmi-1",
+        "target": "ncr_wall_v", "targetHandle": "in-hdmi-1",
+        "style": { "stroke": "#ef4444", "strokeWidth": 2 },
+        "data": { "lineTypeId": "video", "label": "6CH" }
+      },
+      {
+        "id": "e_cr_spl_kvm1", "type": "customSmoothstep",
+        "source": "ncr_splitter", "sourceHandle": "out-b-1",
+        "target": "ncr_kvm1", "targetHandle": "in-hdmi-1",
+        "style": { "stroke": "#ef4444", "strokeWidth": 2 },
+        "data": { "lineTypeId": "video", "label": "5CH" }
+      },
+      {
+        "id": "e_cr_spl_kvm2", "type": "customSmoothstep",
+        "source": "ncr_splitter", "sourceHandle": "out-b-1",
+        "target": "ncr_kvm2", "targetHandle": "in-hdmi-1",
+        "style": { "stroke": "#ef4444", "strokeWidth": 2 },
+        "data": { "lineTypeId": "video", "label": "5CH" }
+      },
+      {
+        "id": "e_cr_kvm1_tx", "type": "customSmoothstep",
+        "source": "ncr_kvm1", "sourceHandle": "out-hdmi-1",
+        "target": "ncr_kvm_tx", "targetHandle": "in-hdmi-1",
+        "style": { "stroke": "#ef4444", "strokeWidth": 2 },
+        "data": { "lineTypeId": "video", "label": "1CH" }
+      },
+      {
+        "id": "e_cr_kvm2_tx", "type": "customSmoothstep",
+        "source": "ncr_kvm2", "sourceHandle": "out-hdmi-1",
+        "target": "ncr_kvm_tx", "targetHandle": "in-hdmi-2",
+        "style": { "stroke": "#ef4444", "strokeWidth": 2 },
+        "data": { "lineTypeId": "video", "label": "1CH" }
+      },
+      {
+        "id": "e_cr_kvm1_tx_usb", "type": "customSmoothstep",
+        "source": "ncr_kvm1", "sourceHandle": "source_both-usb-1",
+        "target": "ncr_kvm_tx", "targetHandle": "target_both-usb-1",
+        "style": { "stroke": "#3b82f6", "strokeWidth": 2 },
+        "data": { "lineTypeId": "usb", "label": "USB" }
+      },
+      {
+        "id": "e_cr_tx_rx", "type": "customSmoothstep",
+        "source": "ncr_kvm_tx", "sourceHandle": "out-lan-1",
+        "target": "ncr_kvm_rx", "targetHandle": "in-lan-1",
+        "style": { "stroke": "#22c55e", "strokeWidth": 2 },
+        "data": { "lineTypeId": "network", "label": "CATx" }
+      },
+      {
+        "id": "e_cr_rx_mon1", "type": "customSmoothstep",
+        "source": "ncr_kvm_rx", "sourceHandle": "out-hdmi-1",
+        "target": "ncr_monitor", "targetHandle": "in-hdmi-1",
+        "style": { "stroke": "#ef4444", "strokeWidth": 2 },
+        "data": { "lineTypeId": "video", "label": "2CH" }
+      },
+      {
+        "id": "e_cr_rx_mon_usb", "type": "customSmoothstep",
+        "source": "ncr_kvm_rx", "sourceHandle": "source_both-usb-1",
+        "target": "ncr_monitor", "targetHandle": "target_both-usb-1",
+        "style": { "stroke": "#3b82f6", "strokeWidth": 2 },
+        "data": { "lineTypeId": "usb", "label": "USB" }
+      }
+    ]
+  }
+]

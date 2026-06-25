@@ -1,0 +1,251 @@
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+}
+
+.app-header {
+  height: 50px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  padding: 0 16px;
+  gap: 12px;
+  z-index: 10;
+}
+
+.header-title {
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+  letter-spacing: 0.01em;
+}
+
+.header-title .version-tag {
+  font-size: 10px;
+  font-weight: 400;
+  color: var(--text-secondary);
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--panel-border);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.main-content {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+.sidebar {
+  width: 320px;
+  display: flex;
+  flex-direction: column;
+  z-index: 5;
+  border-right: 1px solid var(--panel-border);
+  border-top: none;
+  border-bottom: none;
+  border-left: none;
+  border-radius: 0;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+  overflow: hidden;
+}
+
+.sidebar.collapsed {
+  width: 0;
+  opacity: 0;
+  border-right: none;
+  pointer-events: none;
+}
+
+.canvas-area {
+  flex: 1;
+  position: relative;
+}
+
+.sidebar-header {
+  padding: 1rem;
+  border-bottom: 1px solid var(--panel-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sidebar-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.equipment-category {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.category-title {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.equipment-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  cursor: grab;
+  transition: transform 0.2s, background 0.2s;
+}
+
+.equipment-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateY(-2px);
+}
+
+.equipment-item:active {
+  cursor: grabbing;
+}
+
+.equipment-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.equipment-icon.video { background: var(--node-video); }
+.equipment-icon.audio { background: var(--node-audio); }
+.equipment-icon.control { background: var(--node-control); }
+.equipment-icon.network { background: var(--node-network); }
+
+.equipment-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.equipment-name {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.equipment-model {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+/* React Flow Overrides */
+.react-flow__panel {
+  background: var(--panel-bg);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  padding: 0.5rem;
+}
+
+.react-flow__controls-button {
+  background: transparent !important;
+  border: none !important;
+  fill: var(--text-primary) !important;
+}
+
+.react-flow__controls-button:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+.react-flow__minimap {
+  background: var(--panel-bg) !important;
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+}
+
+.react-flow__minimap-mask {
+  fill: rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Diagram Lock visual indication on canvas */
+.canvas-area.diagram-locked {
+  box-shadow: inset 0 0 24px rgba(239, 68, 68, 0.25);
+  transition: box-shadow 0.3s ease;
+}
+
+/* Custom Floating Control Panel styling */
+.unified-control-panel {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
+}
+
+.unified-control-panel.locked {
+  border-color: rgba(239, 68, 68, 0.45) !important;
+  box-shadow: 0 0 16px rgba(239, 68, 68, 0.15), 0 10px 30px rgba(0, 0, 0, 0.6) !important;
+}
+
+/* Grouping divider */
+.control-divider {
+  width: 1px;
+  height: 14px;
+  background: rgba(255,255,255,0.12);
+  margin: 0 2px;
+  flex-shrink: 0;
+}
+
+/* Header center toolbar group */
+.header-center {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  justify-content: center;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Line type filter chip */
+.filter-chip {
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  gap: 4px;
+}
+
+.filter-chip .chip-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Hide UI elements during PDF export */
+.exporting .react-flow__panel,
+.exporting .react-flow__controls,
+.exporting .react-flow__minimap,
+.exporting .unified-control-panel {
+  display: none !important;
+}
+
