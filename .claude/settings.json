@@ -9,7 +9,15 @@
       "PowerShell(git push *)",
       "PowerShell(npm run build)",
       "PowerShell(npm run dev)",
-      "WebFetch(domain:claude.ai)"
+      "WebFetch(domain:claude.ai)",
+      "Bash(gh --version)",
+      "Bash(mkdir -p \"c:/Users/tnwhd/OneDrive/바탕 화면/Gusung/.claude/commands\")",
+      "PowerShell($env:PATH += \";C:\\\\Program Files\\\\Git\\\\bin;C:\\\\Program Files\\\\Git\\\\cmd\"; git branch --show-current)",
+      "PowerShell($env:PATH += \";C:\\\\Program Files\\\\Git\\\\bin;C:\\\\Program Files\\\\Git\\\\cmd\"; git status)",
+      "PowerShell($env:PATH += \";C:\\\\Program Files\\\\Git\\\\bin;C:\\\\Program Files\\\\Git\\\\cmd\"; git diff .claude/settings.json)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\tnwhd\\OneDrive\\바탕 화면\\Gusung\\.claude"
     ]
   },
   "hooks": {
