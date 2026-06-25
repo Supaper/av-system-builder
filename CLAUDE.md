@@ -214,12 +214,32 @@ Windows 비개발자 환경: `start.bat` 또는 `start_hidden.vbs` 실행
 
 ## Git 워크플로
 
-```bash
-# 작업 시작 전 (다른 환경에서 수정이 있었을 경우)
-git pull
+### 브랜치 전략
+- `main` — 완성된 공식 버전. **직접 push 금지**
+- `claude/epic-*` — Claude가 기능 개발하는 작업 브랜치
+- 작업 완료 후 PR(Pull Request)을 통해 main에 Merge
 
-# 작업 완료 후
+### 작업 순서 (Claude Code 공통 — VS Code / 웹 동일)
+
+```bash
+# 1. 작업 시작 전: main 최신 내용 확인 후 차이 있으면 풀
+git fetch origin main
+git merge origin/main --no-edit
+
+# 2. 개발 (claude 브랜치에서만)
+# - 기능 단위로 커밋, 메시지는 한국어로
 git add .
-git commit -m "변경 내용 한 줄 요약"
-git push
+git commit -m "feat: 기능 설명"
+
+# 3. CHANGELOG.md 업데이트 후 같은 커밋 또는 별도 커밋으로 포함
+
+# 4. GitHub에 올리기
+git push -u origin claude/epic-hypatia-xndhhx
+
+# 5. 완료 후 GitHub에서 PR 생성 → 검토 → main에 Merge
 ```
+
+### 주의사항
+- `main`에 직접 push하지 않는다
+- 커밋 전 반드시 main과 차이 확인 (`git fetch origin main`)
+- 기능이 완성되지 않은 상태로 push하지 않는다
