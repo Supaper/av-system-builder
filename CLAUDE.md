@@ -204,9 +204,6 @@ Windows 비개발자 환경: `start.bat` 또는 `start_hidden.vbs` 실행
 - **플랫폼:** Vercel 예정
 - **방식:** GitHub 저장소 연결 → `git push`마다 자동 재배포
 - **전제조건:** Vercel 무료 플랜은 Public 저장소 필요
-- StackBlitz는 Vite 8 + React 19 버전 미지원으로 사용 불가 확인됨
-- GitHub Codespaces는 대안으로 사용 가능 (월 120시간 무료)
-
 ### 멀티 디바이스 데이터 주의사항
 - 이 앱은 **LocalStorage 기반** → 기기마다 데이터가 독립적으로 저장됨
 - 다른 기기에서 같은 구성도를 열려면 **JSON Export → Import** 방식 사용
