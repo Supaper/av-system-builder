@@ -40,6 +40,24 @@ Write-Host "변경된 파일:" -ForegroundColor Yellow
 git status --short
 Write-Host ""
 
+# 커밋 전 체크리스트
+Write-Host "--------------------------------------------" -ForegroundColor DarkCyan
+Write-Host "  커밋 전 체크리스트" -ForegroundColor DarkCyan
+Write-Host "--------------------------------------------" -ForegroundColor DarkCyan
+Write-Host "  [ ] CLAUDE.md '완료된 기능'에 추가했나요?" -ForegroundColor White
+Write-Host "  [ ] CLAUDE.md 'Backlog'에서 완성 항목 제거했나요?" -ForegroundColor White
+Write-Host "  [ ] CHANGELOG.md 업데이트했나요?" -ForegroundColor White
+Write-Host ""
+$ready = Read-Host "위 항목을 확인했으면 y, 아직이면 n"
+if ($ready -ne 'y') {
+    Write-Host ""
+    Write-Host "  → 먼저 CLAUDE.md와 CHANGELOG.md를 업데이트하세요." -ForegroundColor Yellow
+    Write-Host "     (Claude Code에서 작업했다면 Claude가 이미 했을 수도 있어요)" -ForegroundColor DarkGray
+    Write-Host ""
+    exit 0
+}
+Write-Host ""
+
 # 커밋 메시지 입력
 if (-not $Message) {
     $Message = Read-Host "커밋 메시지를 입력하세요 (예: feat: 오토레이아웃 개선)"

@@ -39,6 +39,20 @@ Format: `## [vX.Y] — YYYY-MM-DD` / Added · Changed · Fixed · Removed
 
 ---
 
+## [v1.2] — 2026-05 ~ 06 (미기록 기간 복원)
+
+> CHANGELOG 작성 전 구현된 기능들. 코드베이스 실제 상태 기준으로 소급 기록.
+
+### Added
+- **Undo / Redo** — Ctrl+Z / Ctrl+Y, Zustand past/future 스택 (MAX 50), 드래그·연결·삭제·붙여넣기·레이아웃 모두 추적 (`store.ts`)
+- **Ctrl+C / Ctrl+V 복사·붙여넣기** — 선택 노드 + 연결 엣지 함께 복사, 40px 오프셋 배치 (`App.tsx`)
+- **BulkImport** — Excel/CSV 기반 장비 일괄 등록, append/overwrite 모드 (`BulkImportModal`)
+- **어노테이션 노드** — 텍스트 메모 노드 + 더블클릭 편집 모달 (`AnnotationNode`, `EditAnnotationModal`)
+- **Shape/Zone 노드** — 영역 표시용 사각형 노드 (`ShapeNode`)
+- **MiniMap** — 캔버스 전체 조망 미니맵 (토글 가능)
+
+---
+
 ## [v1.0] — 2026-05-15
 
 ### Added

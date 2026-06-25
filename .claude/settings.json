@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__github__get_file_contents",
+      "mcp__github__list_branches",
+      "mcp__github__list_releases",
+      "PowerShell(git add *)",
+      "PowerShell(git commit *)",
+      "PowerShell(git push *)",
+      "PowerShell(npm run build)",
+      "PowerShell(npm run dev)",
+      "WebFetch(domain:claude.ai)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$env:PATH += ';C:\\Program Files\\Git\\bin;C:\\Program Files\\Git\\cmd'; [Console]::OutputEncoding = [System.Text.Encoding]::UTF8; git fetch origin 2>&1 | Out-Null; $s = (git status 2>&1 | Out-String).Trim(); $l = (git log --oneline -5 2>&1 | Out-String).Trim(); $ctx = \"[Session Start] Git Status:`n\" + $s + \"`n`n[Recent Commits]`n\" + $l; @{hookSpecificOutput=@{hookEventName='SessionStart';additionalContext=$ctx}} | ConvertTo-Json -Compress -Depth 3",
+            "shell": "powershell",
+            "timeout": 30,
+            "statusMessage": "git 상태 확인 중..."
+          }
+        ]
+      }
+    ]
+  }
+}

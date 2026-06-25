@@ -1,5 +1,24 @@
 # AV System Builder — Project Context for Claude Code
 
+## ⚠️ Claude Code 필수 행동 규칙
+
+> 이 규칙은 매 세션 시작마다 읽고, 기능 작업이 끝날 때마다 반드시 실행한다.
+
+### 기능 구현 완료 즉시 (선언 전에) 해야 할 일
+
+기능 작업이 끝났다고 말하기 **전에** 아래 두 파일을 직접 편집한다:
+
+1. **`CLAUDE.md`** (이 파일)
+   - `## 완료된 기능` 섹션에 새 항목 추가
+   - `## 다음 개발 우선순위 (Backlog)` 에서 해당 항목 제거 및 번호 재정렬
+
+2. **`CHANGELOG.md`**
+   - 해당 버전 항목에 구현 내용 기록 (Added / Changed / Fixed)
+
+> 이 두 파일의 업데이트를 빠뜨리면 다음 세션의 Claude가 이미 완성된 기능을 "아직 할 일"로 잘못 안내하게 된다. 이것이 이 규칙이 존재하는 이유다.
+
+---
+
 ## 프로젝트 개요
 React + TypeScript + Vite 기반의 **AV System Configuration Builder**.
 오디오-비디오 시스템 설계를 위한 인터랙티브 다이어그램 툴로, 장비 간 신호 연결을 시각적으로 구성하고 PDF/JSON으로 내보낼 수 있다.
@@ -123,6 +142,12 @@ interface Equipment {
 - PDF 내보내기
 - Windows 배치 파일 서버 구동 (`start.bat`, `start_hidden.vbs`, `stop.bat`)
 - **DS기흥 사무동 1,2층 회의실 구성도 프리셋** (`DS기흥_구성도_presets.json`)
+- **Undo / Redo** — Ctrl+Z / Ctrl+Y, Zustand history 스택 (MAX 50), 드래그·연결·삭제 모두 추적 (`store.ts`)
+- **Ctrl+C / Ctrl+V 복사·붙여넣기** — 선택 노드 + 연결 엣지 함께 복사 (`App.tsx`)
+- **BulkImport** — Excel/CSV 기반 장비 일괄 등록 (`BulkImportModal`)
+- **어노테이션 노드** — 텍스트 메모 노드 + 편집 모달 (`AnnotationNode`, `EditAnnotationModal`)
+- **Shape/Zone 노드** — 영역 표시용 사각형 노드 (`ShapeNode`)
+- **MiniMap** — 캔버스 전체 조망 미니맵 토글
 
 ---
 
@@ -137,11 +162,10 @@ interface Equipment {
 
 ## 다음 개발 우선순위 (Backlog)
 
-1. **Undo / Redo** — Zustand 상태 히스토리 추적 액션 스택
-2. **BOM 생성** — 배치 장비 + 엣지 기반 케이블 명세서(Bill of Materials) 원클릭 출력
-3. **실시간 협업** — WebSockets 또는 CRDT 기반 동시 편집
-4. **마이크 커버리지 시뮬레이션** — Shure MXA925 등 수음 범위 오버레이 위젯
-5. **클라우드 장비 DB 동기화** — Shure, Crestron, Extron 등 글로벌 벤더 카탈로그 연동
+1. **BOM 생성** — 배치 장비 + 엣지 기반 케이블 명세서(Bill of Materials) 원클릭 출력
+2. **실시간 협업** — WebSockets 또는 CRDT 기반 동시 편집
+3. **마이크 커버리지 시뮬레이션** — Shure MXA925 등 수음 범위 오버레이 위젯
+4. **클라우드 장비 DB 동기화** — Shure, Crestron, Extron 등 글로벌 벤더 카탈로그 연동
 
 ---
 
@@ -192,8 +216,6 @@ Windows 비개발자 환경: `start.bat` 또는 `start_hidden.vbs` 실행
 
 ## 릴리즈노트 작성 규칙
 
-기능 추가·수정·버그픽스 작업이 완료될 때마다 **`CHANGELOG.md`** 를 업데이트한다.
-
 ### 버전 규칙
 - `v1.X` — 기능 추가 또는 동작 변경이 있을 때 마이너 버전 올림
 - `v1.X.Y` — 버그픽스만 있을 때 패치 버전 올림
@@ -205,10 +227,6 @@ Windows 비개발자 환경: `start.bat` 또는 `start_hidden.vbs` 실행
 ### Fixed   — 버그 수정
 ### Removed — 제거된 기능
 ```
-
-### 작성 시점
-작업 완료 후 커밋 직전에 CHANGELOG.md를 업데이트하고, 같은 커밋에 포함시킨다.
-사소한 내부 리팩토링은 생략 가능하지만, 사용자에게 보이는 변화는 반드시 기록한다.
 
 ---
 
