@@ -76,7 +76,7 @@ export function BomReportModal({ onClose }: Props) {
       onClick={onClose}
     >
       <div
-        className="glass-panel"
+        className="glass-panel modal-panel"
         style={{ width: 580, maxHeight: '82vh', display: 'flex', flexDirection: 'column', borderRadius: 14, overflow: 'hidden' }}
         onClick={e => e.stopPropagation()}
       >

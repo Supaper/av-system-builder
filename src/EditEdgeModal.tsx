@@ -24,7 +24,7 @@ export function EditEdgeModal({ edgeId, initialLabel, onClose }: Props) {
   return (
     <div style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, background: 'rgba(0,0,0,0.5)' }} onClick={onClose}>
       <div
-        className="glass-panel"
+        className="glass-panel modal-panel"
         style={{ width: 300, padding: 20, display: 'flex', flexDirection: 'column', gap: 14, borderRadius: 12 }}
         onClick={e => e.stopPropagation()}
       >

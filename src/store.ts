@@ -53,7 +53,6 @@ export interface Equipment extends Record<string, unknown> {
   outputs: Port[];
   bidirectional: Port[];
   imageUrl?: string;
-  quantity?: string;
   isReused?: boolean;
 }
 

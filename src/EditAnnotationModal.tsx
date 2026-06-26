@@ -134,7 +134,7 @@ export function EditAnnotationModal({ nodeId, nodeType, initialData, onClose }: 
       zIndex: 1000,
       backdropFilter: 'blur(4px)'
     }}>
-      <div className="glass-panel" style={{ width: '480px', maxHeight: '90vh', overflowY: 'auto', padding: '24px', borderRadius: '12px' }}>
+      <div className="glass-panel modal-panel" style={{ width: '480px', maxHeight: '90vh', overflowY: 'auto', padding: '24px', borderRadius: '12px' }}>
         <h2 style={{ marginBottom: '16px', fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span>Edit {nodeType === 'annotation' ? 'Text Annotation' : 'Shape / Zone'}</span>
         </h2>

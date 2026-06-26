@@ -5,7 +5,7 @@ import { Video, Mic, Cpu, Network } from 'lucide-react';
 import { getDefaultEquipmentImage, calculateNodeHeight } from './store';
 import type { Equipment } from './store';
 
-type EquipmentNodeData = Equipment & { dimmed?: boolean; quantity?: string; isReused?: boolean };
+type EquipmentNodeData = Equipment & { dimmed?: boolean };
 export type EquipmentNodeType = Node<EquipmentNodeData, 'equipment'>;
 
 const categoryColors = {
@@ -31,8 +31,7 @@ const iconMap: Record<string, React.ReactElement> = {
 
 export function EquipmentNode({ data }: NodeProps<EquipmentNodeType>) {
   const isDimmed = data.dimmed ?? false;
-  const quantity = (data as any).quantity as string | undefined;
-  const isReused = (data as any).isReused as boolean | undefined;
+  const isReused = data.isReused;
 
   // React Flow viewport zoom — used for inverse-scaling the LOD overlay text
   const zoom = useRFStore(state => state.transform[2]);
@@ -140,7 +139,7 @@ export function EquipmentNode({ data }: NodeProps<EquipmentNodeType>) {
             gap: 4,
           }}
         >
-          {/* Equipment name + quantity — wraps within node, inverse-scaled for readability */}
+          {/* Equipment name — wraps within node, inverse-scaled for readability */}
           <div style={{
             fontSize: overlayNameSize,
             fontWeight: 800,
@@ -149,26 +148,8 @@ export function EquipmentNode({ data }: NodeProps<EquipmentNodeType>) {
             wordBreak: 'break-word',
             overflowWrap: 'break-word',
             textShadow: '0 1px 6px rgba(0,0,0,0.9)',
-            display: 'flex',
-            alignItems: 'baseline',
-            gap: Math.max(4, overlayNameSize * 0.35),
-            flexWrap: 'wrap',
           }}>
-            <span>{data.name}</span>
-            {quantity && (
-              <span style={{
-                fontSize: Math.max(9, overlayNameSize * 0.65),
-                fontWeight: 700,
-                color: bgColor,
-                background: `${bgColor}2a`,
-                border: `1px solid ${bgColor}55`,
-                padding: '0 4px',
-                borderRadius: 3,
-                flexShrink: 0,
-              }}>
-                {quantity}
-              </span>
-            )}
+            {data.name}
           </div>
 
           {/* Model — only at medium LOD, hidden when compact */}
@@ -200,15 +181,6 @@ export function EquipmentNode({ data }: NodeProps<EquipmentNodeType>) {
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
             {data.name}
-            {quantity && (
-              <span style={{
-                fontSize: 9, fontWeight: 700, padding: '1px 5px', borderRadius: 3,
-                background: `${bgColor}33`, color: bgColor, border: `1px solid ${bgColor}66`,
-                flexShrink: 0,
-              }}>
-                {quantity}
-              </span>
-            )}
             {isReused && (
               <span style={{
                 fontSize: 9, fontWeight: 700, padding: '1px 5px', borderRadius: 3,

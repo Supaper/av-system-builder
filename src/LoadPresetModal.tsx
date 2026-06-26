@@ -13,7 +13,7 @@ export function LoadPresetModal({ preset, onReplace, onAddToCanvas, onNewTab, on
   return (
     <div style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, background: 'rgba(0,0,0,0.5)' }} onClick={onClose}>
       <div
-        className="glass-panel"
+        className="glass-panel modal-panel"
         style={{ width: 340, padding: 24, display: 'flex', flexDirection: 'column', gap: 16, borderRadius: 12 }}
         onClick={e => e.stopPropagation()}
       >
