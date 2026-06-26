@@ -22,12 +22,6 @@ interface BomRow {
   quantity: string;
 }
 
-function parseQuantity(qty?: string): number {
-  if (!qty) return 1;
-  const match = qty.match(/\d+/);
-  return match ? Math.max(1, parseInt(match[0])) : 1;
-}
-
 function getDefaultCableType(lineTypeId: string): 'manufactured' | 'ready-made' {
   if (lineTypeId === 'video' || lineTypeId === 'usb') return 'ready-made';
   return 'manufactured';
@@ -51,10 +45,6 @@ export function BomBulkModal({ onClose }: Props) {
 
       const srcData = sourceNode.data as any;
       const tgtData = targetNode.data as any;
-      const sourceQty = parseQuantity(srcData.quantity);
-      const targetQty = parseQuantity(tgtData.quantity);
-      const expandQty = sourceQty > 1 ? sourceQty : targetQty;
-      const isSourceExpanded = sourceQty > 1;
 
       // 엣지의 실제 lineTypeId: style.stroke 색상으로 역추산도 시도
       const edgeData = edge.data as any;
@@ -69,26 +59,32 @@ export function BomBulkModal({ onClose }: Props) {
 
       const existingBomRows: BomRowData[] = edgeData?.bomRows || [];
 
-      for (let i = 0; i < expandQty; i++) {
-        const existing = existingBomRows[i];
+      existingBomRows.forEach((existing, i) => {
         const rowLineTypeId = existing?.lineTypeId || lineTypeId;
-        let sourceLabel = srcData.name;
-        let targetLabel = tgtData.name;
-        if (expandQty > 1) {
-          if (isSourceExpanded) sourceLabel = `${srcData.name} #${i + 1}`;
-          else targetLabel = `${tgtData.name} #${i + 1}`;
-        }
-
         result.push({
           key: `${edge.id}::${i}`,
           edgeId: edge.id,
-          sourceLabel,
-          targetLabel,
+          sourceLabel: srcData.name,
+          targetLabel: tgtData.name,
           lineTypeId: rowLineTypeId,
           cableType: existing?.cableType ?? getDefaultCableType(rowLineTypeId),
           productName: existing?.productName ?? '',
           length: existing?.length?.toString() ?? '',
           quantity: existing?.quantity?.toString() ?? '1',
+        });
+      });
+
+      if (existingBomRows.length === 0) {
+        result.push({
+          key: `${edge.id}::0`,
+          edgeId: edge.id,
+          sourceLabel: srcData.name,
+          targetLabel: tgtData.name,
+          lineTypeId,
+          cableType: getDefaultCableType(lineTypeId),
+          productName: '',
+          length: '',
+          quantity: '1',
         });
       }
     });
@@ -181,7 +177,7 @@ export function BomBulkModal({ onClose }: Props) {
       onClick={onClose}
     >
       <div
-        className="glass-panel"
+        className="glass-panel modal-panel"
         style={{ width: 'min(96vw, 860px)', maxHeight: '86vh', display: 'flex', flexDirection: 'column', borderRadius: 14, overflow: 'hidden' }}
         onClick={e => e.stopPropagation()}
       >

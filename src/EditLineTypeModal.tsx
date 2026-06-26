@@ -39,7 +39,7 @@ export function EditLineTypeModal({ lineType, onClose }: Props) {
       justifyContent: 'center',
       zIndex: 100
     }}>
-      <div className="glass-panel" style={{ width: '300px', padding: '24px', borderRadius: '12px' }}>
+      <div className="glass-panel modal-panel" style={{ width: '300px', padding: '24px', borderRadius: '12px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
           <h2 style={{ fontSize: '1.25rem' }}>Edit Line Type</h2>
           <button type="button" className="glass-button" style={{ padding: '6px' }} onClick={handleDelete}>

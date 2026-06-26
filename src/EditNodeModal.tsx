@@ -19,6 +19,7 @@ export function EditNodeModal({ nodeId, initialData, onClose }: Props) {
   const [outputs, setOutputs] = useState<Port[]>([...initialData.outputs]);
   const [bidirectional, setBidirectional] = useState<Port[]>([...(initialData.bidirectional || [])]);
   const [imageUrl, setImageUrl] = useState(initialData.imageUrl || '');
+  const [isReused, setIsReused] = useState(initialData.isReused ?? false);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -41,7 +42,8 @@ export function EditNodeModal({ nodeId, initialData, onClose }: Props) {
       inputs,
       outputs,
       bidirectional,
-      imageUrl
+      imageUrl,
+      isReused
     });
     onClose();
   };
@@ -118,7 +120,7 @@ export function EditNodeModal({ nodeId, initialData, onClose }: Props) {
       justifyContent: 'center',
       zIndex: 100
     }}>
-      <div className="glass-panel" style={{ width: '600px', maxHeight: '90vh', overflowY: 'auto', padding: '24px', borderRadius: '12px' }}>
+      <div className="glass-panel modal-panel" style={{ width: '600px', maxHeight: '90vh', overflowY: 'auto', padding: '24px', borderRadius: '12px' }}>
         <h2 style={{ marginBottom: '16px', fontSize: '1.25rem' }}>Edit Node Properties</h2>
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           
@@ -147,6 +149,29 @@ export function EditNodeModal({ nodeId, initialData, onClose }: Props) {
               <option value="network">Network</option>
             </select>
           </div>
+
+          <label style={{
+            display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer',
+            padding: '8px 12px', borderRadius: '8px',
+            background: isReused ? 'rgba(234,179,8,0.08)' : 'rgba(255,255,255,0.02)',
+            border: isReused ? '1px solid rgba(234,179,8,0.4)' : '1px solid var(--panel-border)',
+            transition: 'all 0.15s ease',
+          }}>
+            <input
+              type="checkbox"
+              checked={isReused}
+              onChange={e => setIsReused(e.target.checked)}
+              style={{ width: 14, height: 14, accentColor: '#eab308', cursor: 'pointer' }}
+            />
+            <div>
+              <div style={{ fontSize: '0.875rem', fontWeight: 600, color: isReused ? '#eab308' : 'var(--text-primary)' }}>
+                재활용 장비
+              </div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '1px' }}>
+                기존 설치 장비를 재활용하는 경우 표시
+              </div>
+            </div>
+          </label>
 
           <div>
             <label style={{ display: 'block', marginBottom: '4px', fontSize: '0.875rem' }}>Equipment Photo (Optional)</label>

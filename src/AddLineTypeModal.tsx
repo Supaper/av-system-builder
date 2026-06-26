@@ -27,7 +27,7 @@ export function AddLineTypeModal({ onClose }: Props) {
       justifyContent: 'center',
       zIndex: 100
     }}>
-      <div className="glass-panel" style={{ width: '300px', padding: '24px', borderRadius: '12px' }}>
+      <div className="glass-panel modal-panel" style={{ width: '300px', padding: '24px', borderRadius: '12px' }}>
         <h2 style={{ marginBottom: '16px', fontSize: '1.25rem' }}>Add Line Type</h2>
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           

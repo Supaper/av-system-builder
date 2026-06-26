@@ -2,12 +2,6 @@ import { useState } from 'react';
 import { useStore } from './store';
 import type { BomRowData } from './BomBulkModal';
 
-function parseQuantity(qty?: string): number {
-  if (!qty) return 1;
-  const match = qty.match(/\d+/);
-  return match ? Math.max(1, parseInt(match[0])) : 1;
-}
-
 function getDefaultCableType(lineTypeId: string): 'manufactured' | 'ready-made' {
   if (lineTypeId === 'video' || lineTypeId === 'usb') return 'ready-made';
   return 'manufactured';
@@ -36,26 +30,19 @@ export function BomEdgeModal({ edgeId, onClose }: Props) {
   const srcData = sourceNode?.data as any;
   const tgtData = targetNode?.data as any;
 
-  const sourceQty = parseQuantity(srcData?.quantity);
-  const targetQty = parseQuantity(tgtData?.quantity);
-  const expandQty = sourceQty > 1 ? sourceQty : targetQty;
-  const isSourceExpanded = sourceQty > 1;
-
   const lineTypeId = (edge.data as any)?.lineTypeId || 'sdi';
   const lineType = lineTypes.find(lt => lt.id === lineTypeId);
   const existingBomRows: BomRowData[] = (edge.data as any)?.bomRows || [];
 
-  const [rows, setRows] = useState<RowState[]>(() =>
-    Array.from({ length: expandQty }, (_, i) => {
-      const ex = existingBomRows[i];
-      return {
-        cableType: ex?.cableType ?? getDefaultCableType(lineTypeId),
-        productName: ex?.productName ?? '',
-        length: ex?.length?.toString() ?? '',
-        quantity: ex?.quantity?.toString() ?? '1',
-      };
-    })
-  );
+  const [rows, setRows] = useState<RowState[]>(() => {
+    const base = existingBomRows.length > 0 ? existingBomRows : [undefined];
+    return base.map(ex => ({
+      cableType: ex?.cableType ?? getDefaultCableType(lineTypeId),
+      productName: ex?.productName ?? '',
+      length: ex?.length?.toString() ?? '',
+      quantity: ex?.quantity?.toString() ?? '1',
+    }));
+  });
 
   const update = (idx: number, field: keyof RowState, value: string) => {
     setRows(prev => prev.map((r, i) => i === idx ? { ...r, [field]: value } : r));
@@ -73,8 +60,8 @@ export function BomEdgeModal({ edgeId, onClose }: Props) {
   };
 
   const rowLabel = (i: number) => {
-    if (expandQty <= 1) return null;
-    return isSourceExpanded ? `${srcData?.name} #${i + 1}` : `→ ${tgtData?.name} #${i + 1}`;
+    if (rows.length <= 1) return null;
+    return `#${i + 1}`;
   };
 
   return (
@@ -83,7 +70,7 @@ export function BomEdgeModal({ edgeId, onClose }: Props) {
       onClick={onClose}
     >
       <div
-        className="glass-panel"
+        className="glass-panel modal-panel"
         style={{ width: 420, maxHeight: '80vh', display: 'flex', flexDirection: 'column', borderRadius: 12, overflow: 'hidden' }}
         onClick={e => e.stopPropagation()}
       >
@@ -97,10 +84,7 @@ export function BomEdgeModal({ edgeId, onClose }: Props) {
                 {lineType.name}
               </span>
             )}
-            {expandQty > 1 && (
-              <span style={{ marginLeft: 6, color: '#60a5fa' }}>× {expandQty}</span>
-            )}
-          </p>
+            </p>
         </div>
 
         {/* 행 목록 */}
