@@ -31,12 +31,12 @@ const env = import.meta.env;
 
 // 여기에 본인 프로젝트 값을 직접 붙여넣으면 GitHub Pages 자동 배포에도 그대로 반영된다.
 const FIREBASE_CONFIG = {
-  apiKey: '',
-  authDomain: '',
-  projectId: '',
-  storageBucket: '',
-  messagingSenderId: '',
-  appId: '',
+  apiKey: 'AIzaSyDVgyemxoaw5YSMflP_ay0EysLH7X07_Gs',
+  authDomain: 'av-system-builder.firebaseapp.com',
+  projectId: 'av-system-builder',
+  storageBucket: 'av-system-builder.firebasestorage.app',
+  messagingSenderId: '696689042225',
+  appId: '1:696689042225:web:f3edfd19f5663af7150610',
 };
 
 export const firebaseConfig = {
