@@ -18,6 +18,11 @@ dist
 dist-ssr
 *.local
 
+# Environment files (Firebase config 등) — .env.example 만 커밋
+.env
+.env.*
+!.env.example
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

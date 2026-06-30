@@ -159,6 +159,27 @@ interface Equipment {
 - **새로만들기 버튼** — 헤더 `+` 버튼으로 빈 캔버스 생성. 기존 작업 있으면 저장 확인 후 이름 입력 2단계 플로우
 - **장비 DB 프리셋 독립** — 프리셋 불러오기 시 기존 장비 DB 유지, 새 장비만 병합 추가
 - **평행 엣지 교차 개선** — 같은 노드 쌍 연결 복수 엣지(예: SDI+Control 동시 연결)에 방향 인식 오프셋 할당 (Stage 0)
+- **클라우드 공유 링크 (Firebase Firestore)** — `Share` 버튼으로 현재 구성도를 Firestore 문서에 저장하고 `?share=<id>` 링크 생성. 다른 브라우저·기기·동료가 링크만으로 동일 구성도 로드 (`ShareModal`, `cloud.ts`, `firebaseConfig.ts`). LocalStorage 기기 종속 문제 해결
+
+---
+
+## 클라우드 공유 아키텍처 (Firebase)
+
+### 동작 흐름
+- **저장:** `Share` 버튼 → `ShareModal` → `saveSharedDiagram()` (`cloud.ts`)가 `{nodes, edges, lineTypes, equipmentDB}`를 Firestore `diagrams` 컬렉션에 문서로 추가 → 문서 ID 반환 → `?share=<id>` 링크 생성
+- **불러오기:** 앱 마운트 시 `?share=<id>` 파라미터 감지 → `loadSharedDiagram()` → `importDiagramState()` 로 캔버스 복원 → URL 정리
+- **스냅샷 방식:** 링크는 생성 시점의 구성도를 담은 불변 스냅샷. 수정 후 재공유 시 새 링크 생성 (실시간 동기화 아님 — 그것은 Backlog "실시간 협업")
+
+### 설정 (`src/firebaseConfig.ts`)
+- Firebase 웹 설정값은 **공개되어도 되는 식별자** (비밀 아님). 보안은 Firestore 규칙으로 처리
+- `FIREBASE_CONFIG` 객체에 직접 값 입력 또는 `VITE_FIREBASE_*` 환경변수로 주입
+- ⚠️ **GitHub Pages 자동 배포에도 공유 기능을 쓰려면 `firebaseConfig.ts`에 직접 값 입력** (Actions는 `.env`를 읽지 못함)
+- 미설정 시 공유 기능 자동 비활성화 + 모달에 설정 안내 표시
+- 권장 Firestore 규칙: `diagrams` 문서 `read/create: true`, `update/delete: false` (불변 공유본)
+
+### 제약
+- Firestore 문서 한도 1 MiB → 업로드 이미지(Base64) 많으면 초과 가능. `cloud.ts`가 900KB 초과 시 경고하고 JSON Export 권장
+- `firebase` SDK는 동적 import로 코드 스플릿 (메인 번들 미포함)
 
 ---
 
@@ -216,8 +237,10 @@ Windows 비개발자 환경: `start.bat` 또는 `start_hidden.vbs` 실행
 - **전제조건:** Vercel 무료 플랜은 Public 저장소 필요
 ### 멀티 디바이스 데이터 주의사항
 - 이 앱은 **LocalStorage 기반** → 기기마다 데이터가 독립적으로 저장됨
-- 다른 기기에서 같은 구성도를 열려면 **JSON Export → Import** 방식 사용
-- 진정한 멀티 디바이스 공유는 Backlog의 "실시간 협업" 기능 개발 시 해결
+- 다른 기기에서 같은 구성도를 열려면:
+  1. **클라우드 공유 링크** (`Share` 버튼) — Firebase 설정 시 링크 하나로 어디서든 로드 (권장)
+  2. **JSON Export → Import** — Firebase 미설정 시 파일로 이동
+- 실시간 동시 편집은 Backlog의 "실시간 협업" 기능 개발 시 해결 (공유 링크는 스냅샷 방식)
 
 ---
 

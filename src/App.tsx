@@ -8,7 +8,7 @@ import {
 } from '@xyflow/react';
 import type { Node, Edge } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { Plus, Minus, Maximize, Download, Upload, FileText, LayoutTemplate, Settings, Video, Mic, Cpu, Network, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, FolderOpen, Save, Trash2, Grid, Map, Lock, Unlock, Undo2, Redo2, ClipboardList } from 'lucide-react';
+import { Plus, Minus, Maximize, Download, Upload, FileText, LayoutTemplate, Settings, Video, Mic, Cpu, Network, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, FolderOpen, Save, Trash2, Grid, Map, Lock, Unlock, Undo2, Redo2, ClipboardList, Share2 } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import jsPDF from 'jspdf';
 
@@ -31,6 +31,8 @@ import { BomBulkModal } from './BomBulkModal';
 import { BomEdgeModal } from './BomEdgeModal';
 import { BomReportModal } from './BomReportModal';
 import { LoadPresetModal } from './LoadPresetModal';
+import { ShareModal } from './ShareModal';
+import { loadSharedDiagram } from './cloud';
 import type { DiagramPreset } from './store';
 import './App.css';
 
@@ -208,6 +210,8 @@ function FlowBuilder() {
   const [loadingPreset, setLoadingPreset] = useState<DiagramPreset | null>(null);
   const [editingLineType, setEditingLineType] = useState<any>(null);
   const [isBulkImportModalOpen, setIsBulkImportModalOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [shareLoadState, setShareLoadState] = useState<'idle' | 'loading' | 'error'>('idle');
 
   // 새로만들기 상태
   const [newDiagramStep, setNewDiagramStep] = useState<'idle' | 'confirm' | 'naming'>('idle');
@@ -246,9 +250,30 @@ function FlowBuilder() {
   const [isImportMenuOpen, setIsImportMenuOpen] = useState(false);
   const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
 
-  // On mount: check if this tab was opened with a pending preset via new-tab load
+  // On mount: check if this tab was opened with a pending preset via new-tab load,
+  // or with a cloud share link (?share=<id>).
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+
+    const shareId = params.get('share');
+    if (shareId) {
+      setShareLoadState('loading');
+      loadSharedDiagram(shareId)
+        .then(diagram => {
+          if (diagram) {
+            importDiagramState({ ...diagram, name: '' });
+            setShareLoadState('idle');
+          } else {
+            setShareLoadState('error');
+          }
+        })
+        .catch(() => setShareLoadState('error'))
+        .finally(() => {
+          window.history.replaceState({}, '', window.location.pathname);
+        });
+      return;
+    }
+
     const token = params.get('preset');
     if (token) {
       try {
@@ -533,7 +558,7 @@ function FlowBuilder() {
         <div className="header-title">
           <Settings size={14} color="var(--accent-color)" />
           <span>AV System Builder</span>
-          <span className="version-tag">v1.6</span>
+          <span className="version-tag">v1.7</span>
           <button
             className="glass-button icon-btn"
             onClick={handleNewDiagram}
@@ -928,6 +953,17 @@ function FlowBuilder() {
             )}
           </div>
 
+          {/* Share (Cloud) */}
+          <div className="control-divider" style={{ height: 18 }} />
+          <button
+            type="button"
+            className="glass-button"
+            onClick={() => setIsShareModalOpen(true)}
+            title="클라우드 공유 링크 생성"
+          >
+            <Share2 size={13} /> Share
+          </button>
+
           {/* BOM Section — always rightmost so BOM toggle never shifts when sub-buttons appear */}
           <div className="control-divider" style={{ height: 18 }} />
           {isBomMode && (
@@ -1155,6 +1191,34 @@ function FlowBuilder() {
       )}
       {isBomReportModalOpen && (
         <BomReportModal onClose={() => setIsBomReportModalOpen(false)} />
+      )}
+      {isShareModalOpen && (
+        <ShareModal
+          getDiagram={() => ({ nodes, edges, lineTypes, equipmentDB })}
+          onClose={() => setIsShareModalOpen(false)}
+        />
+      )}
+
+      {/* 공유 링크로 진입 시 로딩/오류 오버레이 */}
+      {shareLoadState !== 'idle' && (
+        <div style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 400, background: 'rgba(0,0,0,0.6)' }}>
+          <div className="glass-panel" style={{ padding: '20px 26px', borderRadius: 12, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, maxWidth: 360, textAlign: 'center' }}>
+            {shareLoadState === 'loading' ? (
+              <>
+                <Share2 size={22} className="spin" color="var(--accent-color)" />
+                <span style={{ fontSize: 13 }}>공유된 구성도를 불러오는 중...</span>
+              </>
+            ) : (
+              <>
+                <span style={{ fontSize: 13, color: '#ef4444', fontWeight: 600 }}>공유 구성도를 찾을 수 없습니다.</span>
+                <span style={{ fontSize: 11, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                  링크가 잘못되었거나 삭제되었을 수 있습니다.
+                </span>
+                <button className="glass-button" style={{ fontSize: 12 }} onClick={() => setShareLoadState('idle')}>닫기</button>
+              </>
+            )}
+          </div>
+        </div>
       )}
 
       {/* 새로만들기 확인 모달 */}
