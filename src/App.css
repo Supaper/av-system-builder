@@ -249,3 +249,11 @@
   display: none !important;
 }
 
+
+/* Share modal spinner */
+@keyframes av-spin {
+  to { transform: rotate(360deg); }
+}
+.spin {
+  animation: av-spin 0.9s linear infinite;
+}

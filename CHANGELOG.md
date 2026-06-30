@@ -5,6 +5,24 @@ Format: `## [vX.Y] — YYYY-MM-DD` / Added · Changed · Fixed · Removed
 
 ---
 
+## [v1.7] — 2026-06-30
+
+### Added
+- **클라우드 공유 링크 (Firebase Firestore)** — 헤더 `Share` 버튼으로 현재 구성도를 클라우드에 저장하고 공유 링크 생성
+  - 생성된 `?share=<id>` 링크를 다른 브라우저·기기·동료에게 전달하면 동일 구성도를 그대로 로드 (LocalStorage 기기 종속 문제 해결)
+  - `ShareModal` — 링크 자동 생성, 클립보드 복사, 새 탭 열기, 업로드 진행/오류 상태 표시
+  - `cloud.ts` — `saveSharedDiagram()` / `loadSharedDiagram()` / `buildShareUrl()`, firebase SDK 동적 import 코드 스플릿
+  - `firebaseConfig.ts` — 설정 파일(직접 입력) + `VITE_FIREBASE_*` 환경변수 지원, 미설정 시 공유 기능 자동 비활성화 + 안내 표시
+  - 앱 진입 시 `?share=<id>` 자동 감지 → 로딩/오류 오버레이와 함께 구성도 복원
+  - 링크는 생성 시점의 불변 스냅샷 (수정 후 재공유 시 새 링크)
+- `.env.example` — Firebase 환경변수 템플릿
+
+### Changed
+- 헤더 버전 배지 `v1.6` → `v1.7`
+- `.gitignore` — `.env` / `.env.*` 무시 (단 `.env.example` 은 커밋)
+
+---
+
 ## [v1.6] — 2026-06-25
 
 ### Added
