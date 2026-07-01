@@ -5,6 +5,23 @@ Format: `## [vX.Y] — YYYY-MM-DD` / Added · Changed · Fixed · Removed
 
 ---
 
+## [v1.8] — 2026-07-01
+
+### Added
+- **팀 공용 라이브러리 실시간 동기화 (Firebase Firestore)** — 장비 DB · 라인 타입 · 프리셋을 클라우드에 두고 모든 기기·브라우저에서 공통으로 표시
+  - 로그인 없는 단일 팀 공용 방식. `onSnapshot` 으로 다른 기기의 변경이 실시간 반영, 로컬 변경은 자동 push (`librarySync.ts`)
+  - `workspace/library` 문서(장비 DB + 라인 타입) + `presets/{id}` 컬렉션(프리셋 1개당 문서 1개, 1MB 한도 회피)
+  - 최초 로드 시 클라우드가 비어 있으면 현재 로컬 값으로 시드, 이후 클라우드가 소스 오브 트루스
+  - 헤더에 동기화 상태 배지(로컬 전용 / 동기화 중 / 클라우드 동기화 / 오류)
+
+### Changed
+- `importDiagramState` — 공유 링크·프리셋 열기·JSON 임포트 시 장비 DB·라인 타입을 **병합**(없는 항목만 추가)하도록 변경. 팀 공용 라이브러리를 통째로 덮어쓰지 않도록 보호
+- `cloud.ts` — Firestore 저장 형식을 **JSON 문자열 필드**로 통일 (undefined 필드·중첩 배열 제약 회피). `getFirestoreDb()` 공용 export
+- 헤더 버전 배지 `v1.7` → `v1.8`
+- Firestore 보안 규칙에 `workspace`·`presets` 컬렉션 read/write 허용 필요 (README 참고)
+
+---
+
 ## [v1.7] — 2026-06-30
 
 ### Added
