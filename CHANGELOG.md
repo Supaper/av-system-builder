@@ -11,10 +11,13 @@ Format: `## [vX.Y] — YYYY-MM-DD` / Added · Changed · Fixed · Removed
 - **`DS기흥_구성도_presets.json`** — 고객사 실 구성도 데이터가 담긴 예시 프리셋 파일을 저장소에서 삭제 (고객정보 보호). git 히스토리에는 남아있음(과거 커밋 1개). "일괄 불러오기" 기능 자체는 영향 없음
 - 로컬에만 있던 고객사 PDF 도면 파일 삭제 (git 미추적, 저장소엔 원래 없었음)
 - 코드 전체 검색으로 미참조 확인된 Vite 템플릿 잔재 파일 4개 삭제: `src/assets/hero.png`, `src/assets/react.svg`, `src/assets/vite.svg`, `public/icons.svg`
+- **로컬 서버 구동용 Windows 스크립트 4개 삭제**: `start.bat`, `start-SOOJ.bat`, `start_hidden.vbs`, `stop.bat` — GitHub Pages 배포 전환으로 비개발자가 로컬 서버를 띄울 필요가 없어짐 (배포된 URL로 바로 접속)
 
 ### Changed
 - CLAUDE.md · README.md에서 삭제된 예시 프리셋 파일 관련 설명을 클라우드 동기화 기반 설명으로 갱신
 - GitHub 저장소의 main에 이미 merge된 로컬·원격 브랜치 6개 정리 (데이터 손실 없음)
+- CLAUDE.md "배포" 섹션 — 실제 상태와 어긋난 "Vercel 예정" 문구를 실제 배포 중인 GitHub Pages 정보로 교정
+- README.md 상단에 배포 URL 추가, "로컬 실행" 섹션을 개발자 전용 안내로 재정의
 
 ---
 
