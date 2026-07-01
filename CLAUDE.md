@@ -148,7 +148,7 @@ interface Equipment {
 - 접이식 사이드바
 - PDF 내보내기
 - Windows 배치 파일 서버 구동 (`start.bat`, `start_hidden.vbs`, `stop.bat`)
-- **DS기흥 사무동 1,2층 회의실 구성도 프리셋** (`DS기흥_구성도_presets.json`)
+- 예시 구성도 프리셋 (고객사 실 데이터 포함 파일은 2026-07-01 저장소에서 삭제 — 고객정보 보호. "일괄 불러오기" 기능 자체는 유지, 필요 시 자체 JSON 파일로 대체)
 - **Undo / Redo** — Ctrl+Z / Ctrl+Y, Zustand history 스택 (MAX 50), 드래그·연결·삭제 모두 추적 (`store.ts`)
 - **Ctrl+C / Ctrl+V 복사·붙여넣기** — 선택 노드 + 연결 엣지 함께 복사 (`App.tsx`)
 - **BulkImport** — Excel/CSV 기반 장비 일괄 등록 (`BulkImportModal`)
@@ -205,12 +205,10 @@ service cloud.firestore {
 
 ---
 
-## 프리셋 파일 구조
+## 프리셋 파일
 
-`DS기흥_구성도_presets.json` — 프로젝트 루트에 위치, 앱에서 일괄 불러오기로 임포트:
-- `DS기흥 1층 컨퍼런스홀`: PTZ×3 → VS5 → UVC → PC, DSP BLU-50v2, Switching Hub GS728TPP
-- `DS기흥 2층 컨벤션룸`: 동일 영상 체인, DSP BLU-101×3, Logic Controller MPCMPC×2, 구즈넥마이크×28
-- `DS기흥 관제실`: 비디오월 PC×5, 2분배기×10, VDM-16X 매트릭스, CT-104-U HDBaseT, KVM CS1798×2, CE824
+고객사 실 구성도가 담긴 예시 프리셋 파일(`DS기흥_구성도_presets.json`)은 2026-07-01 저장소 정리 시 삭제되었다 (고객정보 보호 목적).
+"일괄 불러오기" 기능 자체는 유지되며, 팀 공용 프리셋은 이제 Firestore `presets` 컬렉션에 저장되어 실시간 동기화된다 (위 클라우드 아키텍처 참고). 예시가 필요하면 개인정보가 없는 자체 JSON 파일을 새로 만들어 사용한다.
 
 ---
 
