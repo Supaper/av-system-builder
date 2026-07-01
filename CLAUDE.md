@@ -147,7 +147,6 @@ interface Equipment {
 - Diagram Lock
 - 접이식 사이드바
 - PDF 내보내기
-- Windows 배치 파일 서버 구동 (`start.bat`, `start_hidden.vbs`, `stop.bat`)
 - 예시 구성도 프리셋 (고객사 실 데이터 포함 파일은 2026-07-01 저장소에서 삭제 — 고객정보 보호. "일괄 불러오기" 기능 자체는 유지, 필요 시 자체 JSON 파일로 대체)
 - **Undo / Redo** — Ctrl+Z / Ctrl+Y, Zustand history 스택 (MAX 50), 드래그·연결·삭제 모두 추적 (`store.ts`)
 - **Ctrl+C / Ctrl+V 복사·붙여넣기** — 선택 노드 + 연결 엣지 함께 복사 (`App.tsx`)
@@ -220,15 +219,16 @@ service cloud.firestore {
 
 ---
 
-## 로컬 실행
+## 실행 방법
 
-```bash
-npm install
-npm run dev
-```
+- **일반 사용자:** 배포된 사이트 접속 — `https://supaper.github.io/av-system-builder/` (GitHub Pages, main push마다 자동 재배포). 별도 설치·서버 구동 불필요
+- **개발자 (코드 수정/테스트):**
+  ```bash
+  npm install
+  npm run dev
+  ```
 
-Windows 비개발자 환경: `start.bat` 또는 `start_hidden.vbs` 실행
-서버 종료: `stop.bat`
+⚠️ 로컬 서버 구동용 Windows 배치 파일(`start.bat` 등)은 2026-07-01 GitHub Pages 배포 전환으로 삭제됨. 비개발자용 로컬 실행 경로가 더 이상 필요하지 않음.
 
 ---
 
@@ -249,12 +249,13 @@ Windows 비개발자 환경: `start.bat` 또는 `start_hidden.vbs` 실행
 ### GitHub 저장소
 - **URL:** `https://github.com/Supaper/av-system-builder`
 - **브랜치:** `main`
-- **가시성:** Private (필요 시 Public으로 변경 가능)
+- **가시성:** Private (Private 저장소에서도 GitHub Pages 배포 정상 동작 확인됨. Pages로 배포된 사이트 자체는 URL을 아는 누구나 접근 가능 — 저장소 코드가 Private인 것과는 별개)
 
-### 배포 (예정 — 아직 미완료)
-- **플랫폼:** Vercel 예정
-- **방식:** GitHub 저장소 연결 → `git push`마다 자동 재배포
-- **전제조건:** Vercel 무료 플랜은 Public 저장소 필요
+### 배포 (완료 — GitHub Pages)
+- **URL:** `https://supaper.github.io/av-system-builder/`
+- **방식:** `.github/workflows/deploy.yml` — `main` 브랜치 push마다 `npm run build` → GitHub Pages 자동 재배포
+- **vite.config.ts:** `base: '/av-system-builder/'` (GitHub Pages 서브패스 대응, 변경 시 배포 경로도 함께 깨짐 주의)
+- Firebase 사용 시 `src/firebaseConfig.ts`에 값을 직접 넣어야 배포본에도 반영됨 (Actions는 `.env`를 읽지 않음)
 ### 멀티 디바이스 데이터 주의사항
 - 이 앱은 **LocalStorage 기반** → 기기마다 데이터가 독립적으로 저장됨
 - 다른 기기에서 같은 구성도를 열려면:
