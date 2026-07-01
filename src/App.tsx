@@ -8,7 +8,8 @@ import {
 } from '@xyflow/react';
 import type { Node, Edge } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { Plus, Minus, Maximize, Download, Upload, FileText, LayoutTemplate, Settings, Video, Mic, Cpu, Network, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, FolderOpen, Save, Trash2, Grid, Map, Lock, Unlock, Undo2, Redo2, ClipboardList, Share2 } from 'lucide-react';
+import { Plus, Minus, Maximize, Download, Upload, FileText, LayoutTemplate, Settings, Video, Mic, Cpu, Network, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, FolderOpen, Save, Trash2, Grid, Map, Lock, Unlock, Undo2, Redo2, ClipboardList, Share2, Cloud, CloudOff } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import jsPDF from 'jspdf';
 
@@ -33,6 +34,8 @@ import { BomReportModal } from './BomReportModal';
 import { LoadPresetModal } from './LoadPresetModal';
 import { ShareModal } from './ShareModal';
 import { loadSharedDiagram } from './cloud';
+import { startLibrarySync, type SyncStatus } from './librarySync';
+import { isFirebaseConfigured } from './firebaseConfig';
 import type { DiagramPreset } from './store';
 import './App.css';
 
@@ -212,6 +215,7 @@ function FlowBuilder() {
   const [isBulkImportModalOpen, setIsBulkImportModalOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [shareLoadState, setShareLoadState] = useState<'idle' | 'loading' | 'error'>('idle');
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>(isFirebaseConfigured ? 'connecting' : 'off');
 
   // 새로만들기 상태
   const [newDiagramStep, setNewDiagramStep] = useState<'idle' | 'confirm' | 'naming'>('idle');
@@ -287,6 +291,11 @@ function FlowBuilder() {
       } catch (_) {}
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 팀 공용 라이브러리(장비 DB·라인 타입·프리셋) 실시간 동기화 시작
+  useEffect(() => {
+    void startLibrarySync(setSyncStatus);
+  }, []);
 
   const handleOpenPresetInNewTab = (preset: DiagramPreset) => {
     const token = Date.now().toString(36);
@@ -558,7 +567,7 @@ function FlowBuilder() {
         <div className="header-title">
           <Settings size={14} color="var(--accent-color)" />
           <span>AV System Builder</span>
-          <span className="version-tag">v1.7</span>
+          <span className="version-tag">v1.8</span>
           <button
             className="glass-button icon-btn"
             onClick={handleNewDiagram}
@@ -567,6 +576,37 @@ function FlowBuilder() {
           >
             <Plus size={11} /> New
           </button>
+          {(() => {
+            const map: Record<SyncStatus, { color: string; label: string; icon: LucideIcon }> = {
+              off:        { color: '#64748b', label: '로컬 전용',   icon: CloudOff },
+              connecting: { color: '#f59e0b', label: '동기화 중…',  icon: Cloud },
+              synced:     { color: '#22c55e', label: '클라우드 동기화', icon: Cloud },
+              error:      { color: '#ef4444', label: '동기화 오류',  icon: CloudOff },
+            };
+            const s = map[syncStatus];
+            const Icon = s.icon;
+            return (
+              <span
+                title={
+                  syncStatus === 'off'
+                    ? 'Firebase 미설정 — 이 기기에만 저장됩니다'
+                    : syncStatus === 'synced'
+                    ? '장비 DB·라인 타입·프리셋이 팀 공용으로 실시간 동기화됩니다'
+                    : s.label
+                }
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 4, marginLeft: 6,
+                  fontSize: 10, fontWeight: 600, color: s.color,
+                  padding: '2px 7px', borderRadius: 10,
+                  background: `${s.color}1a`, border: `1px solid ${s.color}44`,
+                  userSelect: 'none',
+                }}
+              >
+                <Icon size={11} className={syncStatus === 'connecting' ? 'spin' : undefined} />
+                {s.label}
+              </span>
+            );
+          })()}
         </div>
 
         {/* Center Toolbar */}

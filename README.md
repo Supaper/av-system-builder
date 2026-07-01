@@ -18,6 +18,7 @@
 | PDF 내보내기 | 현재 구성도를 PDF로 저장 |
 | JSON Import/Export | 구성도 전체를 JSON으로 저장·복원 |
 | 클라우드 공유 링크 | `Share` 버튼으로 링크 생성 → 다른 브라우저·기기·동료가 링크만으로 동일 구성도 로드 (Firebase) |
+| 팀 공용 라이브러리 동기화 | 장비 DB·라인 타입·프리셋을 클라우드에 두고 모든 기기에서 실시간 공통 표시 (Firebase) |
 | 장비 이미지 업로드 | 제품 사진 삽입 (Base64, 서버 불필요) |
 | 수량·재활용 표시 | 노드에 수량 배지·재활용 여부 마킹 |
 | 줌 LOD | 축소 시 장비명+수량 크게 표시, 확대 시 포트 상세 표시 |
@@ -65,33 +66,36 @@ npm run dev
 
 ---
 
-## 클라우드 공유 링크 설정 (Firebase)
+## 클라우드 설정 (Firebase)
 
-`Share` 버튼으로 만든 링크 하나로 어떤 브라우저·기기에서도 같은 구성도를 열 수 있습니다.
-이 기능을 쓰려면 무료 Firebase 프로젝트를 한 번 연결해야 합니다. (미설정 시에는 JSON Export/Import 사용)
+Firebase를 연결하면 두 가지가 동작합니다. (미설정 시에는 JSON Export/Import 사용)
+- **공유 링크** — `Share` 버튼으로 만든 링크 하나로 어떤 기기에서도 같은 구성도 열람
+- **팀 공용 라이브러리 동기화** — 장비 DB·라인 타입·프리셋을 모든 기기에서 실시간 공통 표시
 
 1. [console.firebase.google.com](https://console.firebase.google.com) 에서 프로젝트 생성
 2. **빌드 → Firestore Database** 생성
 3. **프로젝트 설정 ⚙️ → 내 앱 → 웹 앱(`</>`) 추가** → `firebaseConfig` 값 복사
 4. `src/firebaseConfig.ts` 의 `FIREBASE_CONFIG` 객체에 값 붙여넣기
-5. Firestore **규칙** 탭에 아래 규칙 적용 (링크를 아는 사람만 읽기/생성, 기존 공유본은 불변):
+5. Firestore **규칙** 탭에 아래 규칙 적용 후 **게시**:
 
    ```
    rules_version = '2';
    service cloud.firestore {
      match /databases/{database}/documents {
-       match /diagrams/{docId} {
-         allow read: if true;
-         allow create: if true;
-         allow update, delete: if false;
-       }
+       // 공유 링크 스냅샷 (링크를 아는 사람만 읽기/생성, 기존 공유본은 불변)
+       match /diagrams/{docId}  { allow read: if true; allow create: if true; allow update, delete: if false; }
+       // 팀 공용 라이브러리 (장비 DB · 라인 타입)
+       match /workspace/{docId} { allow read, write: if true; }
+       // 팀 공용 프리셋
+       match /presets/{docId}   { allow read, write: if true; }
      }
    }
    ```
 
 > Firebase 웹 설정값은 공개되어도 되는 식별자입니다(비밀번호 아님). 실제 보안은 위 Firestore 규칙으로 처리합니다.
-> GitHub Pages 자동 배포에도 공유 기능을 적용하려면 환경변수(`.env`)가 아닌 `src/firebaseConfig.ts` 에 직접 값을 넣으세요.
-> 공유 한도는 약 0.9 MB이며, 업로드 이미지가 많은 대형 구성도는 JSON Export를 권장합니다.
+> `workspace`·`presets` 규칙은 로그인 없이 누구나 읽기/쓰기 가능한 **팀 공용** 방식입니다. 사내 도구 용도에 적합하며, 외부 노출이 우려되면 규칙 강화(예: Firebase Auth 도입)가 필요합니다.
+> GitHub Pages 자동 배포에도 적용하려면 환경변수(`.env`)가 아닌 `src/firebaseConfig.ts` 에 직접 값을 넣으세요.
+> 클라우드 문서 한도는 약 0.9 MB이며, 업로드 이미지가 많으면 초과할 수 있습니다 (초과 항목은 동기화 스킵 + 경고). 대형 프로젝트는 JSON Export를 권장합니다.
 
 ---
 

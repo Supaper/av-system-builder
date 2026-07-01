@@ -659,11 +659,21 @@ export const useStore = create<AppState>((set, get) => {
   },
   importDiagramState: (state) => {
     get().saveToHistory();
+    // 장비 DB·라인 타입은 팀 공용(클라우드 동기화) 자산이므로 통째로 덮어쓰지 않고
+    // 없는 항목만 병합한다. 공유 링크·프리셋 열기가 공용 라이브러리를 지우지 않도록 보호.
+    const currentDB = get().equipmentDB;
+    const dbIds = new Set(currentDB.map(e => e.id));
+    const mergedDB = [...currentDB, ...(state.equipmentDB || []).filter(e => !dbIds.has(e.id))];
+
+    const currentLT = get().lineTypes;
+    const ltIds = new Set(currentLT.map(l => l.id));
+    const mergedLT = [...currentLT, ...(state.lineTypes || []).filter(l => !ltIds.has(l.id))];
+
     set({
       nodes: state.nodes || [],
       edges: (state.edges || []).map(e => ({ ...e, animated: false })),
-      lineTypes: state.lineTypes || [],
-      equipmentDB: state.equipmentDB || [],
+      lineTypes: mergedLT,
+      equipmentDB: mergedDB,
     });
   },
 };

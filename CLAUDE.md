@@ -160,26 +160,48 @@ interface Equipment {
 - **장비 DB 프리셋 독립** — 프리셋 불러오기 시 기존 장비 DB 유지, 새 장비만 병합 추가
 - **평행 엣지 교차 개선** — 같은 노드 쌍 연결 복수 엣지(예: SDI+Control 동시 연결)에 방향 인식 오프셋 할당 (Stage 0)
 - **클라우드 공유 링크 (Firebase Firestore)** — `Share` 버튼으로 현재 구성도를 Firestore 문서에 저장하고 `?share=<id>` 링크 생성. 다른 브라우저·기기·동료가 링크만으로 동일 구성도 로드 (`ShareModal`, `cloud.ts`, `firebaseConfig.ts`). LocalStorage 기기 종속 문제 해결
+- **팀 공용 라이브러리 실시간 동기화 (Firebase Firestore)** — 장비 DB·라인 타입·프리셋을 클라우드에 두고 로그인 없이 모든 기기에서 공통 표시. `onSnapshot` 실시간 반영 + 로컬 변경 자동 push (`librarySync.ts`). 헤더에 동기화 상태 배지
 
 ---
 
-## 클라우드 공유 아키텍처 (Firebase)
+## 클라우드 아키텍처 (Firebase)
 
-### 동작 흐름
-- **저장:** `Share` 버튼 → `ShareModal` → `saveSharedDiagram()` (`cloud.ts`)가 `{nodes, edges, lineTypes, equipmentDB}`를 Firestore `diagrams` 컬렉션에 문서로 추가 → 문서 ID 반환 → `?share=<id>` 링크 생성
-- **불러오기:** 앱 마운트 시 `?share=<id>` 파라미터 감지 → `loadSharedDiagram()` → `importDiagramState()` 로 캔버스 복원 → URL 정리
-- **스냅샷 방식:** 링크는 생성 시점의 구성도를 담은 불변 스냅샷. 수정 후 재공유 시 새 링크 생성 (실시간 동기화 아님 — 그것은 Backlog "실시간 협업")
+### 1) 공유 링크 (스냅샷) — `diagrams` 컬렉션
+- **저장:** `Share` 버튼 → `ShareModal` → `saveSharedDiagram()` (`cloud.ts`)가 `{nodes, edges, lineTypes, equipmentDB}`를 **JSON 문자열**로 직렬화해 `diagrams` 문서에 추가 → 문서 ID 반환 → `?share=<id>` 링크 생성
+- **불러오기:** 앱 마운트 시 `?share=<id>` 감지 → `loadSharedDiagram()` → `importDiagramState()`(병합 방식) 로 캔버스 복원 → URL 정리
+- **스냅샷 방식:** 링크는 생성 시점의 불변 스냅샷. 수정 후 재공유 시 새 링크 생성
+
+### 2) 팀 공용 라이브러리 (실시간) — `workspace` / `presets` 컬렉션
+- **대상:** 장비 DB · 라인 타입 · 프리셋 (사용자가 추가/수정한 값)
+- **저장 구조:** `workspace/library` 문서 = `{equipmentDB, lineTypes}` (JSON 문자열), `presets/{presetId}` = 프리셋 1개당 문서 1개 (JSON 문자열)
+- **동작 (`librarySync.ts`):** 앱 마운트 시 `startLibrarySync()` 1회 호출 → `onSnapshot` 으로 원격→로컬 실시간 반영, `useStore.subscribe` 로 로컬 변경→원격 push (라이브러리는 800ms 디바운스)
+- **무한 루프 방지:** 원격 반영 중에는 `applyingRemote` 플래그로 push 스킵
+- **최초 시드:** 클라우드가 비어 있으면 현재 로컬 값 업로드, 이후 클라우드가 소스 오브 트루스
+- **동시 편집:** last-write-wins (완전한 동시 편집은 Backlog "실시간 협업")
+- **라이브러리 보호:** `importDiagramState`를 병합 방식으로 변경 — 공유 링크·프리셋 열기·JSON 임포트가 공용 장비 DB·라인 타입을 통째로 덮어쓰지 않고 없는 항목만 추가
 
 ### 설정 (`src/firebaseConfig.ts`)
 - Firebase 웹 설정값은 **공개되어도 되는 식별자** (비밀 아님). 보안은 Firestore 규칙으로 처리
 - `FIREBASE_CONFIG` 객체에 직접 값 입력 또는 `VITE_FIREBASE_*` 환경변수로 주입
-- ⚠️ **GitHub Pages 자동 배포에도 공유 기능을 쓰려면 `firebaseConfig.ts`에 직접 값 입력** (Actions는 `.env`를 읽지 못함)
-- 미설정 시 공유 기능 자동 비활성화 + 모달에 설정 안내 표시
-- 권장 Firestore 규칙: `diagrams` 문서 `read/create: true`, `update/delete: false` (불변 공유본)
+- ⚠️ **GitHub Pages 자동 배포에도 쓰려면 `firebaseConfig.ts`에 직접 값 입력** (Actions는 `.env`를 읽지 못함)
+- 미설정 시 공유/동기화 자동 비활성화 (헤더 배지 "로컬 전용")
+
+### 필요한 Firestore 보안 규칙
+```
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /diagrams/{docId}  { allow read: if true; allow create: if true; allow update, delete: if false; }
+    match /workspace/{docId} { allow read, write: if true; }
+    match /presets/{docId}   { allow read, write: if true; }
+  }
+}
+```
 
 ### 제약
-- Firestore 문서 한도 1 MiB → 업로드 이미지(Base64) 많으면 초과 가능. `cloud.ts`가 900KB 초과 시 경고하고 JSON Export 권장
+- Firestore 문서 한도 1 MiB → 업로드 이미지(Base64) 많으면 초과 가능. `cloud.ts`/`librarySync.ts`가 900KB 초과 시 경고하고 해당 항목 동기화 스킵. 대형 프로젝트는 JSON Export 권장
 - `firebase` SDK는 동적 import로 코드 스플릿 (메인 번들 미포함)
+- Firestore는 `undefined` 필드·중첩 배열에 제약 → 모든 구성도 데이터는 JSON 문자열로 저장
 
 ---
 
@@ -194,9 +216,9 @@ interface Equipment {
 
 ## 다음 개발 우선순위 (Backlog)
 
-1. **실시간 협업** — WebSockets 또는 CRDT 기반 동시 편집
+1. **실시간 협업** — WebSockets 또는 CRDT 기반 동시 편집 (현재 팀 공용 동기화는 last-write-wins 방식)
 2. **마이크 커버리지 시뮬레이션** — Shure MXA925 등 수음 범위 오버레이 위젯
-3. **클라우드 장비 DB 동기화** — Shure, Crestron, Extron 등 글로벌 벤더 카탈로그 연동
+3. **글로벌 벤더 카탈로그 연동** — Shure, Crestron, Extron 등 벤더 장비 DB 임포트 (사용자 장비 DB 클라우드 동기화는 v1.8에서 완료)
 
 ---
 
