@@ -67,8 +67,6 @@ export interface DiagramPreset {
   name: string;
   nodes: Node[];
   edges: Edge[];
-  lineTypes: LineType[];
-  equipmentDB: Equipment[];
   createdAt: string;
   updatedAt: string;
 }
@@ -324,7 +322,7 @@ interface AppState {
   addPresetToCanvas: (id: string) => void;
   deletePreset: (id: string) => void;
   importPresets: (presets: DiagramPreset[]) => void;
-  importDiagramState: (state: Omit<DiagramPreset, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  importDiagramState: (state: { nodes?: Node[]; edges?: Edge[] }) => void;
 }
 
 export const useStore = create<AppState>((set, get) => {
@@ -542,7 +540,7 @@ export const useStore = create<AppState>((set, get) => {
 
   presets: loadPresetsFromStorage(),
   savePreset: (name: string, id?: string) => {
-    const { nodes, edges, lineTypes, equipmentDB, presets } = get();
+    const { nodes, edges, presets } = get();
     let updated: DiagramPreset[];
     if (id) {
       updated = presets.map(p => p.id === id ? {
@@ -550,8 +548,6 @@ export const useStore = create<AppState>((set, get) => {
         name,
         nodes,
         edges,
-        lineTypes,
-        equipmentDB,
         updatedAt: new Date().toISOString(),
       } : p);
     } else {
@@ -560,8 +556,6 @@ export const useStore = create<AppState>((set, get) => {
         name,
         nodes,
         edges,
-        lineTypes,
-        equipmentDB,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -596,18 +590,10 @@ export const useStore = create<AppState>((set, get) => {
     get().saveToHistory();
     const preset = get().presets.find(p => p.id === id);
     if (preset) {
-      // 장비 DB는 기존 목록을 유지하고, 프리셋에 새 장비가 있으면 병합만 수행
-      const currentDB = get().equipmentDB;
-      const existingIds = new Set(currentDB.map(e => e.id));
-      const merged = [
-        ...currentDB,
-        ...preset.equipmentDB.filter(e => !existingIds.has(e.id)),
-      ];
+      // 장비 DB·라인 타입은 팀 공용(실시간 동기화) 자산이라 프리셋을 불러와도 건드리지 않는다.
       set({
         nodes: preset.nodes,
         edges: preset.edges.map(e => ({ ...e, animated: false })),
-        lineTypes: preset.lineTypes,
-        equipmentDB: merged,
       });
     }
   },
@@ -659,21 +645,26 @@ export const useStore = create<AppState>((set, get) => {
   },
   importDiagramState: (state) => {
     get().saveToHistory();
-    // 장비 DB·라인 타입은 팀 공용(클라우드 동기화) 자산이므로 통째로 덮어쓰지 않고
-    // 없는 항목만 병합한다. 공유 링크·프리셋 열기가 공용 라이브러리를 지우지 않도록 보호.
+    // 장비 DB·라인 타입은 팀 공용(실시간 동기화) 자산이므로 통째로 덮어쓰지 않는다.
+    // 노드는 배치 시점의 장비 정보를 그대로 품고 있으므로(App.tsx onDrop), 그중
+    // 로컬 카탈로그에 없는 장비만 사이드바에 보충한다 — 공유 이후 카탈로그에서
+    // 지워진 장비라도 diagram 자체는 항상 정상 렌더링된다.
     const currentDB = get().equipmentDB;
     const dbIds = new Set(currentDB.map(e => e.id));
-    const mergedDB = [...currentDB, ...(state.equipmentDB || []).filter(e => !dbIds.has(e.id))];
-
-    const currentLT = get().lineTypes;
-    const ltIds = new Set(currentLT.map(l => l.id));
-    const mergedLT = [...currentLT, ...(state.lineTypes || []).filter(l => !ltIds.has(l.id))];
+    const seenIds = new Set<string>();
+    const recoveredEquipment = (state.nodes || [])
+      .filter(n => n.type === 'equipment')
+      .map(n => n.data as unknown as Equipment)
+      .filter(eq => {
+        if (!eq?.id || dbIds.has(eq.id) || seenIds.has(eq.id)) return false;
+        seenIds.add(eq.id);
+        return true;
+      });
 
     set({
       nodes: state.nodes || [],
       edges: (state.edges || []).map(e => ({ ...e, animated: false })),
-      lineTypes: mergedLT,
-      equipmentDB: mergedDB,
+      equipmentDB: [...currentDB, ...recoveredEquipment],
     });
   },
 };

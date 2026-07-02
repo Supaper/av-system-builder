@@ -160,24 +160,32 @@ interface Equipment {
 - **평행 엣지 교차 개선** — 같은 노드 쌍 연결 복수 엣지(예: SDI+Control 동시 연결)에 방향 인식 오프셋 할당 (Stage 0)
 - **클라우드 공유 링크 (Firebase Firestore)** — `Share` 버튼으로 현재 구성도를 Firestore 문서에 저장하고 `?share=<id>` 링크 생성. 다른 브라우저·기기·동료가 링크만으로 동일 구성도 로드 (`ShareModal`, `cloud.ts`, `firebaseConfig.ts`). LocalStorage 기기 종속 문제 해결
 - **팀 공용 라이브러리 실시간 동기화 (Firebase Firestore)** — 장비 DB·라인 타입·프리셋을 클라우드에 두고 로그인 없이 모든 기기에서 공통 표시. `onSnapshot` 실시간 반영 + 로컬 변경 자동 push (`librarySync.ts`). 헤더에 동기화 상태 배지
+- **Firestore 데이터 정규화** — 장비 DB·라인 타입을 `equipment/{id}`·`lineTypes/{id}` 개별 문서로 분리(항목 1개 = 문서 1개), 프리셋·공유 링크는 `nodes`/`edges`만 저장하도록 경량화 (자세한 내용은 아래 클라우드 아키텍처 참고)
+- **장비 라이브러리 검색** — 사이드바 검색창으로 이름·모델 기준 클라이언트 필터링. 매칭 없는 카테고리는 자동 숨김
 
 ---
 
 ## 클라우드 아키텍처 (Firebase)
 
-### 1) 공유 링크 (스냅샷) — `diagrams` 컬렉션
-- **저장:** `Share` 버튼 → `ShareModal` → `saveSharedDiagram()` (`cloud.ts`)가 `{nodes, edges, lineTypes, equipmentDB}`를 **JSON 문자열**로 직렬화해 `diagrams` 문서에 추가 → 문서 ID 반환 → `?share=<id>` 링크 생성
-- **불러오기:** 앱 마운트 시 `?share=<id>` 감지 → `loadSharedDiagram()` → `importDiagramState()`(병합 방식) 로 캔버스 복원 → URL 정리
-- **스냅샷 방식:** 링크는 생성 시점의 불변 스냅샷. 수정 후 재공유 시 새 링크 생성
+**핵심 원칙 (v1.10 정규화 이후):** 캔버스 노드는 배치 시점의 장비 정보를 통째로 품고(`data: {...equipment}`), 엣지는 생성 시점의 색상을 직접 품는다(`style.stroke`). 즉 노드/엣지는 카탈로그 없이도 항상 정상 렌더링되는 자기완결적 데이터다. 그래서 카탈로그(장비 DB·라인 타입)는 정규화된 전용 컬렉션에만 두고, 프리셋·공유 링크는 카탈로그를 중복 저장하지 않는다.
 
-### 2) 팀 공용 라이브러리 (실시간) — `workspace` / `presets` 컬렉션
-- **대상:** 장비 DB · 라인 타입 · 프리셋 (사용자가 추가/수정한 값)
-- **저장 구조:** `workspace/library` 문서 = `{equipmentDB, lineTypes}` (JSON 문자열), `presets/{presetId}` = 프리셋 1개당 문서 1개 (JSON 문자열)
-- **동작 (`librarySync.ts`):** 앱 마운트 시 `startLibrarySync()` 1회 호출 → `onSnapshot` 으로 원격→로컬 실시간 반영, `useStore.subscribe` 로 로컬 변경→원격 push (라이브러리는 800ms 디바운스)
+### 1) 카탈로그 (실시간, 정규화) — `equipment` / `lineTypes` 컬렉션
+- **대상:** 장비 DB · 라인 타입 (사용자가 추가/수정한 값)
+- **저장 구조:** 항목 1개 = 문서 1개 — `equipment/{equipmentId}`, `lineTypes/{lineTypeId}` (네이티브 필드, JSON 문자열 아님)
+- **동작 (`librarySync.ts`):** 앱 마운트 시 `startLibrarySync()` 1회 호출 → 컬렉션 단위 `onSnapshot` 으로 원격→로컬 실시간 반영, `useStore.subscribe` 에서 변경 전/후 배열을 diff해 **바뀐 문서만** 개별 `setDoc`/`deleteDoc` (배열 전체를 통째로 재직렬화하지 않음)
 - **무한 루프 방지:** 원격 반영 중에는 `applyingRemote` 플래그로 push 스킵
 - **최초 시드:** 클라우드가 비어 있으면 현재 로컬 값 업로드, 이후 클라우드가 소스 오브 트루스
-- **동시 편집:** last-write-wins (완전한 동시 편집은 Backlog "실시간 협업")
-- **라이브러리 보호:** `importDiagramState`를 병합 방식으로 변경 — 공유 링크·프리셋 열기·JSON 임포트가 공용 장비 DB·라인 타입을 통째로 덮어쓰지 않고 없는 항목만 추가
+- **동시 편집:** last-write-wins, 항목 단위이므로 서로 다른 장비를 동시에 편집해도 충돌 없음 (완전한 동시 편집은 Backlog "실시간 협업")
+
+### 2) 프리셋 (실시간) — `presets` 컬렉션
+- `presets/{presetId}` = 프리셋 1개당 문서 1개, `{id, name, json, updatedAt}` — `json`은 `{id, name, nodes, edges, createdAt, updatedAt}` 직렬화 (카탈로그 필드 없음)
+- 프리셋을 불러와도 로컬 장비 DB·라인 타입은 건드리지 않음 — 카탈로그는 항상 실시간 동기화된 전역 상태이므로 병합 자체가 불필요
+
+### 3) 공유 링크 (스냅샷) — `diagrams` 컬렉션
+- **저장:** `Share` 버튼 → `ShareModal` → `saveSharedDiagram()` (`cloud.ts`)가 `{nodes, edges}`만 **JSON 문자열**로 직렬화해 `diagrams` 문서에 추가 → 문서 ID 반환 → `?share=<id>` 링크 생성
+- **불러오기:** 앱 마운트 시 `?share=<id>` 감지 → `loadSharedDiagram()` → `importDiagramState()` 로 캔버스 복원 → URL 정리. 노드/엣지가 자기완결적이라 렌더링은 카탈로그 유무와 무관하게 항상 정상 동작
+- **카탈로그 보충:** 로드된 노드 중 로컬 장비 DB에 없는 장비는 `node.data`에서 그대로 복구해 사이드바에 추가 (`store.ts`의 `importDiagramState`) — 공유 시점 이후 카탈로그에서 삭제된 장비라도 다이어그램 자체는 항상 정상 렌더링
+- **스냅샷 방식:** 링크는 생성 시점의 불변 스냅샷. 수정 후 재공유 시 새 링크 생성
 
 ### 설정 (`src/firebaseConfig.ts`)
 - Firebase 웹 설정값은 **공개되어도 되는 식별자** (비밀 아님). 보안은 Firestore 규칙으로 처리
@@ -191,16 +199,27 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     match /diagrams/{docId}  { allow read: if true; allow create: if true; allow update, delete: if false; }
-    match /workspace/{docId} { allow read, write: if true; }
+    match /equipment/{docId} { allow read, write: if true; }
+    match /lineTypes/{docId} { allow read, write: if true; }
     match /presets/{docId}   { allow read, write: if true; }
+    match /workspace/{docId} { allow read, write: if true; } // 마이그레이션 검증 끝나면 삭제 가능 (아래 참고)
   }
 }
 ```
 
+### 레거시 구조 마이그레이션 (v1.10)
+- v1.9까지는 장비 DB·라인 타입이 `workspace/library` 문서 1개에 JSON 문자열로 통째로 저장되고, 프리셋·공유 링크도 카탈로그 전체를 매번 복제해 저장했다
+- `scripts/migrate-firestore-normalize.mjs` 로 무중단 단계적 이전 (스크립트 상단 주석에 순서 상세):
+  1. `--apply` — `equipment`/`lineTypes` 컬렉션 생성 (순수 추가, 기존 `workspace`/`presets` 문서는 안 건드림 → 언제 실행해도 구코드에 영향 없음)
+  2. 새 코드 배포 → 정상 동작 확인
+  3. `--apply --trim-presets` — 프리셋 문서에서 레거시 `equipmentDB`/`lineTypes` 필드 제거 (구코드가 아직 쓰이는 동안 실행하면 구코드의 `loadPreset`이 깨지므로 반드시 2단계 이후에만)
+  4. `--apply --delete-legacy` — `workspace/library` 문서 삭제 (되돌릴 수 없는 마지막 단계)
+- 2026-07-02 기준 1단계까지 운영 반영 완료 (장비 26개·라인 타입 6개 이전 확인)
+
 ### 제약
-- Firestore 문서 한도 1 MiB → 업로드 이미지(Base64) 많으면 초과 가능. `cloud.ts`/`librarySync.ts`가 900KB 초과 시 경고하고 해당 항목 동기화 스킵. 대형 프로젝트는 JSON Export 권장
+- Firestore 문서 한도 1 MiB → 업로드 이미지(Base64) 많으면 초과 가능. `librarySync.ts`가 항목별 900KB 초과 시 경고하고 해당 항목 동기화 스킵. 대형 프로젝트는 JSON Export 권장
 - `firebase` SDK는 동적 import로 코드 스플릿 (메인 번들 미포함)
-- Firestore는 `undefined` 필드·중첩 배열에 제약 → 모든 구성도 데이터는 JSON 문자열로 저장
+- 프리셋·공유 링크의 `nodes`/`edges`는 React Flow 객체가 `undefined` 필드를 가질 수 있어 여전히 JSON 문자열로 저장. `equipment`/`lineTypes` 문서는 필드가 고정적이라 네이티브 필드로 저장
 
 ---
 
