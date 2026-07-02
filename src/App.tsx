@@ -8,7 +8,7 @@ import {
 } from '@xyflow/react';
 import type { Node, Edge } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { Plus, Minus, Maximize, Download, Upload, FileText, LayoutTemplate, Settings, Video, Mic, Cpu, Network, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, FolderOpen, Save, Trash2, Grid, Map, Lock, Unlock, Undo2, Redo2, ClipboardList, Share2, Cloud, CloudOff } from 'lucide-react';
+import { Plus, Minus, Maximize, Download, Upload, FileText, LayoutTemplate, Settings, Video, Mic, Cpu, Network, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, FolderOpen, Save, Trash2, Grid, Map, Lock, Unlock, Undo2, Redo2, ClipboardList, Share2, Cloud, CloudOff, Search, X } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import jsPDF from 'jspdf';
@@ -60,6 +60,15 @@ function FlowBuilder() {
 
   const [hiddenLineTypeIds, setHiddenLineTypeIds] = useState<string[]>([]);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [equipmentSearch, setEquipmentSearch] = useState('');
+
+  const filteredEquipmentDB = useMemo(() => {
+    const q = equipmentSearch.trim().toLowerCase();
+    if (!q) return equipmentDB;
+    return equipmentDB.filter(eq =>
+      eq.name.toLowerCase().includes(q) || eq.model.toLowerCase().includes(q)
+    );
+  }, [equipmentDB, equipmentSearch]);
 
   const processedEdges = useMemo(
     () => processEdgesWithOffsets(edges, nodes),
@@ -265,7 +274,7 @@ function FlowBuilder() {
       loadSharedDiagram(shareId)
         .then(diagram => {
           if (diagram) {
-            importDiagramState({ ...diagram, name: '' });
+            importDiagramState(diagram);
             setShareLoadState('idle');
           } else {
             setShareLoadState('error');
@@ -567,7 +576,7 @@ function FlowBuilder() {
         <div className="header-title">
           <Settings size={14} color="var(--accent-color)" />
           <span>AV System Builder</span>
-          <span className="version-tag">v1.9</span>
+          <span className="version-tag">v1.10</span>
           <button
             className="glass-button icon-btn"
             onClick={handleNewDiagram}
@@ -1055,18 +1064,44 @@ function FlowBuilder() {
               <ChevronLeft size={16} />
             </button>
           </div>
+          <div style={{ position: 'relative', padding: '0 12px 8px' }}>
+            <Search size={13} style={{ position: 'absolute', left: 22, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)', pointerEvents: 'none' }} />
+            <input
+              type="text"
+              className="glass-input"
+              placeholder="장비 검색 (이름·모델)"
+              value={equipmentSearch}
+              onChange={(e) => setEquipmentSearch(e.target.value)}
+              style={{ width: '100%', fontSize: 12, padding: '6px 26px' }}
+            />
+            {equipmentSearch && (
+              <button
+                type="button"
+                onClick={() => setEquipmentSearch('')}
+                title="검색어 지우기"
+                style={{ position: 'absolute', right: 18, top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex' }}
+              >
+                <X size={13} />
+              </button>
+            )}
+          </div>
           <div className="sidebar-content">
-            {categories.map((cat) => (
+            {categories.map((cat) => {
+              const isSearching = equipmentSearch.trim().length > 0;
+              const items = filteredEquipmentDB.filter(eq => eq.category === cat.key);
+              if (isSearching && items.length === 0) return null;
+              const isOpen = isSearching ? true : openCategories[cat.key];
+              return (
               <div key={cat.key} className="equipment-category">
-                <div 
-                  className="category-title" 
+                <div
+                  className="category-title"
                   style={{ display: 'flex', justifyContent: 'space-between', cursor: 'pointer' }}
                   onClick={() => toggleCategory(cat.key)}
                 >
                   {cat.label}
-                  {openCategories[cat.key] ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                  {isOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                 </div>
-                {openCategories[cat.key] && equipmentDB.filter(eq => eq.category === cat.key).map(eq => {
+                {isOpen && items.map(eq => {
                   const displayImg = eq.imageUrl || getDefaultEquipmentImage(eq.name, eq.category);
                   return (
                     <div 
@@ -1090,7 +1125,8 @@ function FlowBuilder() {
                   );
                 })}
               </div>
-            ))}
+              );
+            })}
           </div>
         </aside>
 
@@ -1234,7 +1270,7 @@ function FlowBuilder() {
       )}
       {isShareModalOpen && (
         <ShareModal
-          getDiagram={() => ({ nodes, edges, lineTypes, equipmentDB })}
+          getDiagram={() => ({ nodes, edges })}
           onClose={() => setIsShareModalOpen(false)}
         />
       )}

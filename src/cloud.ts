@@ -10,14 +10,11 @@
 // firebase SDK는 동적 import 하여 초기 번들에 포함되지 않도록 한다.
 // ───────────────────────────────────────────────────────────────────────────
 import type { Edge, Node } from '@xyflow/react';
-import type { Equipment, LineType } from './store';
 import { firebaseConfig, isFirebaseConfigured } from './firebaseConfig';
 
 export interface SharedDiagram {
   nodes: Node[];
   edges: Edge[];
-  lineTypes: LineType[];
-  equipmentDB: Equipment[];
 }
 
 // Firestore 단일 문서 한도는 1 MiB. 여유를 두고 900 KB 에서 경고한다.
@@ -52,8 +49,6 @@ export async function saveSharedDiagram(state: SharedDiagram, name?: string): Pr
   const payload: SharedDiagram = {
     nodes: state.nodes,
     edges: state.edges,
-    lineTypes: state.lineTypes,
-    equipmentDB: state.equipmentDB,
   };
 
   const json = JSON.stringify(payload);
@@ -90,8 +85,6 @@ export async function loadSharedDiagram(id: string): Promise<SharedDiagram | nul
   return {
     nodes: parsed.nodes || [],
     edges: parsed.edges || [],
-    lineTypes: parsed.lineTypes || [],
-    equipmentDB: parsed.equipmentDB || [],
   };
 }
 

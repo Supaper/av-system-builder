@@ -1,18 +1,19 @@
 // ───────────────────────────────────────────────────────────────────────────
 // 팀 공용 라이브러리 실시간 동기화 (Firebase Firestore)
 //
-// 장비 DB · 라인 타입 · 프리셋을 클라우드에 두고, 로그인 없이 모든 기기에서
-// 공통으로 보이게 한다. onSnapshot 으로 원격 변경을 실시간 반영하고,
-// 로컬 변경은 클라우드로 push 한다.
+// 장비 · 라인 타입은 각각 1개 = 문서 1개로 정규화된 컬렉션에 저장한다.
+// 항목 하나가 바뀌어도 그 문서 하나만 diff해서 쓰기 때문에, 배열 전체를
+// 매번 직렬화해서 통째로 덮어쓰던 예전 방식보다 충돌 위험이 낮고 확장하기 쉽다.
 //
-//   workspace/library  : { equipmentDB, lineTypes }  (JSON 문자열 필드)
-//   presets/{presetId} : 프리셋 1개당 문서 1개        (JSON 문자열 필드)
+//   equipment/{equipmentId} : 장비 1개 (category, name, model, ports, ...)
+//   lineTypes/{lineTypeId}  : 라인 타입 1개 (name, color)
+//   presets/{presetId}      : 프리셋 1개당 문서 1개 (JSON 문자열 필드)
 //
 // 단일 팀 공용 방식 — 로그인/권한 없이 누구나 읽고 쓴다. 동시 편집 시
 // 마지막 저장이 이김(last-write-wins). 완전한 동시 편집은 Backlog "실시간 협업".
 // ───────────────────────────────────────────────────────────────────────────
 import { useStore } from './store';
-import type { DiagramPreset } from './store';
+import type { DiagramPreset, Equipment, LineType } from './store';
 import { isFirebaseConfigured } from './firebaseConfig';
 import { getFirestoreDb, byteSize, MAX_DOC_BYTES } from './cloud';
 
@@ -22,7 +23,6 @@ let started = false;
 // 원격 스냅샷을 store 에 반영하는 동안 true — 이때 발생하는 store 변경은
 // 다시 클라우드로 push 하지 않는다 (무한 루프 방지).
 let applyingRemote = false;
-let libraryPushTimer: ReturnType<typeof setTimeout> | null = null;
 
 /**
  * 실시간 동기화 시작. 앱 마운트 시 1회 호출한다 (중복 호출은 무시).
@@ -39,40 +39,55 @@ export async function startLibrarySync(onStatus?: (s: SyncStatus) => void): Prom
     const db = await getFirestoreDb();
     const { doc, collection, onSnapshot, deleteDoc } = await import('firebase/firestore');
 
-    // ─── 장비 DB + 라인 타입 (workspace/library) ───────────────────────────
-    const libRef = doc(db, 'workspace', 'library');
-    let librarySeeded = false;
+    // ─── 장비 (equipment 컬렉션) ────────────────────────────────────────────
+    const equipmentCol = collection(db, 'equipment');
+    let equipmentSeeded = false;
 
     onSnapshot(
-      libRef,
+      equipmentCol,
       (snap) => {
-        if (!snap.exists()) {
-          // 클라우드가 비어 있으면 현재 로컬 값으로 최초 시드
-          if (!librarySeeded) {
-            librarySeeded = true;
-            const { equipmentDB, lineTypes } = useStore.getState();
-            void writeLibrary(equipmentDB, lineTypes, onStatus);
-          }
+        if (snap.empty && !equipmentSeeded) {
+          // 클라우드가 비어 있으면 현재 로컬 장비 DB로 최초 시드
+          equipmentSeeded = true;
+          const { equipmentDB } = useStore.getState();
+          equipmentDB.forEach((eq) => void writeEquipmentItem(eq, onStatus));
           return;
         }
-        librarySeeded = true;
-        try {
-          const raw = snap.data() as { equipmentDB?: string; lineTypes?: string };
-          const equipmentDB = raw.equipmentDB ? JSON.parse(raw.equipmentDB) : [];
-          const lineTypes = raw.lineTypes ? JSON.parse(raw.lineTypes) : [];
-          applyingRemote = true;
-          useStore.setState({ equipmentDB, lineTypes });
-          applyingRemote = false;
-          onStatus?.('synced');
-        } catch (e) {
-          applyingRemote = false;
-          console.error('라이브러리 원격 반영 실패', e);
-        }
+        equipmentSeeded = true;
+        const remote: Equipment[] = [];
+        snap.forEach((d) => remote.push({ id: d.id, ...(d.data() as object) } as Equipment));
+        applyingRemote = true;
+        useStore.setState({ equipmentDB: remote });
+        applyingRemote = false;
+        onStatus?.('synced');
       },
       (err) => {
-        console.error('라이브러리 동기화 오류', err);
+        console.error('장비 DB 동기화 오류', err);
         onStatus?.('error');
       }
+    );
+
+    // ─── 라인 타입 (lineTypes 컬렉션) ───────────────────────────────────────
+    const lineTypesCol = collection(db, 'lineTypes');
+    let lineTypesSeeded = false;
+
+    onSnapshot(
+      lineTypesCol,
+      (snap) => {
+        if (snap.empty && !lineTypesSeeded) {
+          lineTypesSeeded = true;
+          const { lineTypes } = useStore.getState();
+          lineTypes.forEach((lt) => void writeLineTypeItem(lt));
+          return;
+        }
+        lineTypesSeeded = true;
+        const remote: LineType[] = [];
+        snap.forEach((d) => remote.push({ id: d.id, ...(d.data() as object) } as LineType));
+        applyingRemote = true;
+        useStore.setState({ lineTypes: remote });
+        applyingRemote = false;
+      },
+      (err) => console.error('라인 타입 동기화 오류', err)
     );
 
     // ─── 프리셋 (presets 컬렉션) ────────────────────────────────────────────
@@ -106,16 +121,16 @@ export async function startLibrarySync(onStatus?: (s: SyncStatus) => void): Prom
       (err) => console.error('프리셋 동기화 오류', err)
     );
 
-    // ─── 로컬 변경 → 클라우드 push ─────────────────────────────────────────
+    // ─── 로컬 변경 → 클라우드 push (바뀐 항목만 diff해서 push) ───────────────
     useStore.subscribe((state, prev) => {
       if (applyingRemote) return;
 
-      if (state.equipmentDB !== prev.equipmentDB || state.lineTypes !== prev.lineTypes) {
-        // 잦은 편집을 묶어서 저장 (디바운스)
-        if (libraryPushTimer) clearTimeout(libraryPushTimer);
-        libraryPushTimer = setTimeout(() => {
-          void writeLibrary(state.equipmentDB, state.lineTypes, onStatus);
-        }, 800);
+      if (state.equipmentDB !== prev.equipmentDB) {
+        void diffAndPushEquipment(prev.equipmentDB, state.equipmentDB, onStatus);
+      }
+
+      if (state.lineTypes !== prev.lineTypes) {
+        void diffAndPushLineTypes(prev.lineTypes, state.lineTypes);
       }
 
       if (state.presets !== prev.presets) {
@@ -129,29 +144,84 @@ export async function startLibrarySync(onStatus?: (s: SyncStatus) => void): Prom
   }
 }
 
-async function writeLibrary(
-  equipmentDB: unknown,
-  lineTypes: unknown,
+async function writeEquipmentItem(eq: Equipment, onStatus?: (s: SyncStatus) => void): Promise<void> {
+  try {
+    const db = await getFirestoreDb();
+    const { doc, setDoc } = await import('firebase/firestore');
+    const { id, ...fields } = eq;
+    const json = JSON.stringify(fields);
+    if (byteSize(json) > MAX_DOC_BYTES) {
+      console.warn(`장비 "${eq.name}" 데이터가 0.9MB를 초과하여 동기화를 건너뜁니다. 업로드 이미지를 줄이세요.`);
+      onStatus?.('error');
+      return;
+    }
+    await setDoc(doc(db, 'equipment', id), fields);
+    onStatus?.('synced');
+  } catch (e) {
+    console.error('장비 저장 실패', eq.id, e);
+    onStatus?.('error');
+  }
+}
+
+async function diffAndPushEquipment(
+  prev: Equipment[],
+  next: Equipment[],
   onStatus?: (s: SyncStatus) => void
 ): Promise<void> {
   try {
     const db = await getFirestoreDb();
-    const { doc, setDoc } = await import('firebase/firestore');
-    const payload = {
-      equipmentDB: JSON.stringify(equipmentDB),
-      lineTypes: JSON.stringify(lineTypes),
-      updatedAt: Date.now(),
-    };
-    if (byteSize(payload.equipmentDB) > MAX_DOC_BYTES) {
-      console.warn('공용 장비 DB 용량이 0.9MB를 초과하여 동기화를 건너뜁니다. 업로드 이미지를 줄이세요.');
-      onStatus?.('error');
-      return;
+    const { doc, deleteDoc } = await import('firebase/firestore');
+    const prevById = new Map(prev.map((e) => [e.id, e]));
+    const nextIds = new Set(next.map((e) => e.id));
+
+    for (const eq of next) {
+      const old = prevById.get(eq.id);
+      if (!old || JSON.stringify(old) !== JSON.stringify(eq)) {
+        await writeEquipmentItem(eq, onStatus);
+      }
     }
-    await setDoc(doc(db, 'workspace', 'library'), payload);
-    onStatus?.('synced');
+    for (const eq of prev) {
+      if (!nextIds.has(eq.id)) {
+        await deleteDoc(doc(db, 'equipment', eq.id));
+      }
+    }
   } catch (e) {
-    console.error('라이브러리 저장 실패', e);
+    console.error('장비 DB 동기화 실패', e);
     onStatus?.('error');
+  }
+}
+
+async function writeLineTypeItem(lt: LineType): Promise<void> {
+  try {
+    const db = await getFirestoreDb();
+    const { doc, setDoc } = await import('firebase/firestore');
+    const { id, ...fields } = lt;
+    await setDoc(doc(db, 'lineTypes', id), fields);
+  } catch (e) {
+    console.error('라인 타입 저장 실패', lt.id, e);
+  }
+}
+
+async function diffAndPushLineTypes(prev: LineType[], next: LineType[]): Promise<void> {
+  try {
+    const db = await getFirestoreDb();
+    const { doc, deleteDoc } = await import('firebase/firestore');
+    const prevById = new Map(prev.map((l) => [l.id, l]));
+    const nextIds = new Set(next.map((l) => l.id));
+
+    for (const lt of next) {
+      const old = prevById.get(lt.id);
+      if (!old || JSON.stringify(old) !== JSON.stringify(lt)) {
+        await writeLineTypeItem(lt);
+      }
+    }
+    for (const lt of prev) {
+      if (!nextIds.has(lt.id)) {
+        await deleteDoc(doc(db, 'lineTypes', lt.id));
+      }
+    }
+  } catch (e) {
+    console.error('라인 타입 동기화 실패', e);
   }
 }
 
