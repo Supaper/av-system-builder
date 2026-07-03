@@ -1098,7 +1098,7 @@ function FlowBuilder() {
               if (isSearching && items.length === 0) return null;
               const isOpen = isSearching ? true : openCategories[cat.key];
 
-              // name(제품명) 기준 소그룹 — 그룹에 항목이 1개뿐이면 접기 UI 없이 바로 노출
+              // name(제품명) 기준 소그룹 — 항목 수와 무관하게 항상 접이식으로 표시
               const groups: { name: string; items: Equipment[] }[] = [];
               items.forEach(eq => {
                 const g = groups.find(g => g.name === eq.name);
@@ -1141,9 +1141,6 @@ function FlowBuilder() {
                   {isOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                 </div>
                 {isOpen && groups.map(group => {
-                  if (group.items.length === 1) {
-                    return renderEquipmentItem(group.items[0]);
-                  }
                   const subKey = `${cat.key}::${group.name}`;
                   const isSubOpen = isSearching ? true : (openSubGroups[subKey] ?? false);
                   return (
