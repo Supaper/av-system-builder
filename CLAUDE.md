@@ -195,6 +195,8 @@ interface EquipmentOption {
 - **장비 옵션 시스템** — 장비에 장착 가능한 카드/액세서리를 독립 카탈로그(`EquipmentOption`)로 관리. 하나의 옵션이 특정 모델(`compatibleModels`) 또는 모듈형 프레임 제품군 전체(`compatibleSeries`)에 다대다로 호환 가능. `EditNodeModal`에서 옵션 선택 시 포트 구성 자동 반영 (`getAvailableOptionsForEquipment`)
 - **BOM 기성케이블 카탈로그 연동** — `CableCatalogItem` 독립 컬렉션 추가. BOM 일괄/개별 입력 화면에서 자유 텍스트 대신 카탈로그 검색·선택 가능 (직접 입력도 계속 허용)
 - **엑셀 원본 데이터 기반 장비 DB 대량 확충** — 자체 정리한 장비 리스트(`av-system-builder-raw-data.xlsx`, 저장소 미포함)를 `scripts/seed-equipment-from-excel.mjs`로 일괄 변환해 장비 747개·옵션 137개·케이블 카탈로그 169개를 Firestore에 반영 (전원/랙/판넬류 25개는 제외, 자세한 매핑 규칙은 `EQUIPMENT_DB_SCHEMA.md` 참고)
+- **다크/라이트 모드** — 헤더 해/달 토글, LocalStorage `av-builder-theme` 저장. 테마 색상은 전부 `src/index.css`의 CSS 변수로 관리 (`:root` = 다크 기본, `[data-theme='light']` 오버라이드) — 새 UI 작성 시 하드코딩 색상 대신 반드시 변수 사용 (`--subtle-bg`, `--hover-bg`, `--modal-bg`, `--input-bg`, `--divider` 등)
+- **사이드바 계층 시각 구분** — 대분류는 악센트 배경 띠(`.category-title`), 중분류는 들여쓰기+왼쪽 가이드선(`.equipment-subgroup-title`, `.equipment-subgroup-items`)
 
 ---
 
