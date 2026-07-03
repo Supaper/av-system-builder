@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useStore } from './store';
+import { useState, useMemo } from 'react';
+import { useStore, getAvailableOptionsForEquipment, getDefaultPortTypeForCategory } from './store';
 import type { Equipment, EquipmentCategory, Port, PortType } from './store';
 import { Trash2, Plus, Upload } from 'lucide-react';
 
@@ -11,15 +11,43 @@ interface Props {
 
 export function EditNodeModal({ nodeId, initialData, onClose }: Props) {
   const updateNodeData = useStore((state) => state.updateNodeData);
-  
+  const equipmentOptions = useStore((state) => state.equipmentOptions);
+
   const [name, setName] = useState(initialData.name);
   const [model, setModel] = useState(initialData.model);
   const [category, setCategory] = useState<EquipmentCategory>(initialData.category);
-  const [inputs, setInputs] = useState<Port[]>([...initialData.inputs]);
-  const [outputs, setOutputs] = useState<Port[]>([...initialData.outputs]);
-  const [bidirectional, setBidirectional] = useState<Port[]>([...(initialData.bidirectional || [])]);
+
+  // 옵션이 추가한 포트를 제외한 "기본 포트"만 관리한다 — 옵션 포트는 selectedOptionIds로부터
+  // 매번 다시 계산되므로(아래 selectedOptionPorts), 여기 섞이면 옵션 해제 시 제거가 안 된다.
+  const existingOptionPortIds = new Set((initialData.optionPortIds as string[] | undefined) || []);
+  const [inputs, setInputs] = useState<Port[]>(initialData.inputs.filter(p => !existingOptionPortIds.has(p.id)));
+  const [outputs, setOutputs] = useState<Port[]>(initialData.outputs.filter(p => !existingOptionPortIds.has(p.id)));
+  const [bidirectional, setBidirectional] = useState<Port[]>((initialData.bidirectional || []).filter(p => !existingOptionPortIds.has(p.id)));
   const [imageUrl, setImageUrl] = useState(initialData.imageUrl || '');
   const [isReused, setIsReused] = useState(initialData.isReused ?? false);
+  const [selectedOptionIds, setSelectedOptionIds] = useState<string[]>((initialData.selectedOptionIds as string[] | undefined) || []);
+
+  const availableOptions = useMemo(
+    () => getAvailableOptionsForEquipment({ model, series: initialData.series }, equipmentOptions),
+    [model, initialData.series, equipmentOptions]
+  );
+
+  const selectedOptionPorts = useMemo(() => {
+    const result = { inputs: [] as Port[], outputs: [] as Port[], bidirectional: [] as Port[] };
+    selectedOptionIds.forEach(optId => {
+      const opt = equipmentOptions.find(o => o.id === optId);
+      if (!opt) return;
+      const namespace = (p: Port): Port => ({ ...p, id: `opt-${opt.id}-${p.id}` });
+      result.inputs.push(...opt.addPorts.inputs.map(namespace));
+      result.outputs.push(...opt.addPorts.outputs.map(namespace));
+      result.bidirectional.push(...opt.addPorts.bidirectional.map(namespace));
+    });
+    return result;
+  }, [selectedOptionIds, equipmentOptions]);
+
+  const toggleOption = (optId: string) => {
+    setSelectedOptionIds(prev => prev.includes(optId) ? prev.filter(id => id !== optId) : [...prev, optId]);
+  };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -34,25 +62,27 @@ export function EditNodeModal({ nodeId, initialData, onClose }: Props) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const finalInputs = [...inputs, ...selectedOptionPorts.inputs];
+    const finalOutputs = [...outputs, ...selectedOptionPorts.outputs];
+    const finalBidirectional = [...bidirectional, ...selectedOptionPorts.bidirectional];
     updateNodeData(nodeId, {
       ...initialData,
       name,
       model,
       category,
-      inputs,
-      outputs,
-      bidirectional,
+      inputs: finalInputs,
+      outputs: finalOutputs,
+      bidirectional: finalBidirectional,
       imageUrl,
-      isReused
+      isReused,
+      selectedOptionIds,
+      optionPortIds: [...selectedOptionPorts.inputs, ...selectedOptionPorts.outputs, ...selectedOptionPorts.bidirectional].map(p => p.id),
     });
     onClose();
   };
 
   const handleAddPort = (type: 'in' | 'out' | 'both') => {
-    const defaultType: PortType = 
-      category === 'video' ? 'video' :
-      category === 'audio' ? 'audio' :
-      category === 'control' ? 'control' : 'network';
+    const defaultType: PortType = getDefaultPortTypeForCategory(category);
 
     const newPort: Port = {
       id: `${type}-${Date.now()}`,
@@ -144,11 +174,38 @@ export function EditNodeModal({ nodeId, initialData, onClose }: Props) {
               style={{ backgroundColor: 'var(--panel-bg)' }}
             >
               <option value="video">Video</option>
+              <option value="display">Display</option>
+              <option value="conferencing">Conferencing</option>
               <option value="audio">Audio</option>
               <option value="control">Control</option>
               <option value="network">Network</option>
+              <option value="broadcast">Broadcast</option>
+              <option value="etc">Etc</option>
             </select>
           </div>
+
+          {availableOptions.length > 0 && (
+            <div style={{ backgroundColor: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '8px', border: '1px solid var(--panel-border)' }}>
+              <span style={{ fontSize: '0.875rem', fontWeight: 'bold', display: 'block', marginBottom: '8px' }}>옵션 (선택 시 포트 구성에 반영)</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {availableOptions.map(opt => {
+                  const portCount = opt.addPorts.inputs.length + opt.addPorts.outputs.length + opt.addPorts.bidirectional.length;
+                  return (
+                    <label key={opt.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={selectedOptionIds.includes(opt.id)}
+                        onChange={() => toggleOption(opt.id)}
+                      />
+                      <span style={{ fontWeight: 600 }}>{opt.name}</span>
+                      {opt.model && <span style={{ color: 'var(--text-secondary)' }}>({opt.model})</span>}
+                      <span style={{ color: 'var(--text-secondary)', fontSize: '0.7rem' }}>포트 {portCount}개 추가</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           <label style={{
             display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer',
@@ -261,6 +318,12 @@ export function EditNodeModal({ nodeId, initialData, onClose }: Props) {
                     </button>
                   </div>
                 ))}
+                {selectedOptionPorts.inputs.map(port => (
+                  <div key={port.id} style={{ display: 'flex', gap: '8px', alignItems: 'center', opacity: 0.6 }}>
+                    <span style={{ flex: 2, fontSize: '0.75rem' }}>{port.label}</span>
+                    <span style={{ flex: 1.5, fontSize: '0.7rem', color: 'var(--text-secondary)' }}>{port.type} (옵션)</span>
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -297,6 +360,12 @@ export function EditNodeModal({ nodeId, initialData, onClose }: Props) {
                     </button>
                   </div>
                 ))}
+                {selectedOptionPorts.outputs.map(port => (
+                  <div key={port.id} style={{ display: 'flex', gap: '8px', alignItems: 'center', opacity: 0.6 }}>
+                    <span style={{ flex: 2, fontSize: '0.75rem' }}>{port.label}</span>
+                    <span style={{ flex: 1.5, fontSize: '0.7rem', color: 'var(--text-secondary)' }}>{port.type} (옵션)</span>
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -331,6 +400,12 @@ export function EditNodeModal({ nodeId, initialData, onClose }: Props) {
                     <button type="button" className="glass-button" style={{ padding: '4px' }} onClick={() => handleRemovePort('both', idx)}>
                       <Trash2 size={12} color="#ef4444" />
                     </button>
+                  </div>
+                ))}
+                {selectedOptionPorts.bidirectional.map(port => (
+                  <div key={port.id} style={{ display: 'flex', gap: '8px', alignItems: 'center', opacity: 0.6 }}>
+                    <span style={{ flex: 2, fontSize: '0.75rem' }}>{port.label}</span>
+                    <span style={{ flex: 1.5, fontSize: '0.7rem', color: 'var(--text-secondary)' }}>{port.type} (옵션)</span>
                   </div>
                 ))}
               </div>

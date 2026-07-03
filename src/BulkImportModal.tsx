@@ -184,11 +184,15 @@ export function BulkImportModal({ isOpen, onClose, onImport }: BulkImportModalPr
 
       let category = (row[headerMap['category']] || '').trim().toLowerCase();
       if (category.includes('비디오') || category.includes('영상')) category = 'video';
+      if (category.includes('디스플레이') || category.includes('tv') || category.includes('프로젝터') || category.includes('스크린')) category = 'display';
+      if (category.includes('화상회의') || category.includes('컨퍼런싱') || category.includes('conferencing')) category = 'conferencing';
       if (category.includes('오디오') || category.includes('음향')) category = 'audio';
       if (category.includes('제어') || category.includes('컨트롤')) category = 'control';
       if (category.includes('네트워크') || category.includes('통신')) category = 'network';
+      if (category.includes('방송') || category.includes('head-end') || category.includes('catv')) category = 'broadcast';
+      if (category.includes('기타') || category.includes('etc')) category = 'etc';
 
-      const validCategories = ['video', 'audio', 'control', 'network'];
+      const validCategories = ['video', 'display', 'conferencing', 'audio', 'control', 'network', 'broadcast', 'etc'];
       const finalCategory = (validCategories.includes(category) ? category : 'video') as EquipmentCategory;
 
       const name = (row[headerMap['name']] || '').trim();

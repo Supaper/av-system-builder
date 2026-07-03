@@ -1,18 +1,22 @@
 import React from 'react';
 import { Handle, Position, useStore as useRFStore } from '@xyflow/react';
 import type { NodeProps, Node } from '@xyflow/react';
-import { Video, Mic, Cpu, Network } from 'lucide-react';
+import { Video, Mic, Cpu, Network, Monitor, Users, Radio, MoreHorizontal } from 'lucide-react';
 import { getDefaultEquipmentImage, calculateNodeHeight } from './store';
-import type { Equipment } from './store';
+import type { Equipment, EquipmentCategory } from './store';
 
 type EquipmentNodeData = Equipment & { dimmed?: boolean };
 export type EquipmentNodeType = Node<EquipmentNodeData, 'equipment'>;
 
-const categoryColors = {
+const categoryColors: Record<EquipmentCategory, string> = {
   video: 'var(--node-video)',
+  display: 'var(--node-display)',
+  conferencing: 'var(--node-conferencing)',
   audio: 'var(--node-audio)',
   control: 'var(--node-control)',
   network: 'var(--node-network)',
+  broadcast: 'var(--node-broadcast)',
+  etc: 'var(--node-etc)',
 };
 
 const portColors: Record<string, string> = {
@@ -24,9 +28,13 @@ const portColors: Record<string, string> = {
 
 const iconMap: Record<string, React.ReactElement> = {
   video: <Video size={14} />,
+  display: <Monitor size={14} />,
+  conferencing: <Users size={14} />,
   audio: <Mic size={14} />,
   control: <Cpu size={14} />,
   network: <Network size={14} />,
+  broadcast: <Radio size={14} />,
+  etc: <MoreHorizontal size={14} />,
 };
 
 export function EquipmentNode({ data }: NodeProps<EquipmentNodeType>) {

@@ -18,6 +18,11 @@ dist
 dist-ssr
 *.local
 
+# 엑셀 → 장비 DB 시드 스크립트 검토용 덤프 (일회성, 커밋 불필요)
+.seed-dump/
+# 장비 DB 구축용 원본 엑셀 (일회성 입력 자료, EQUIPMENT_DB_SCHEMA.md 참고)
+av-system-builder-raw-data.xlsx
+
 # Environment files (Firebase config 등) — .env.example 만 커밋
 .env
 .env.*

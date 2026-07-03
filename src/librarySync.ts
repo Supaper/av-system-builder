@@ -13,7 +13,7 @@
 // 마지막 저장이 이김(last-write-wins). 완전한 동시 편집은 Backlog "실시간 협업".
 // ───────────────────────────────────────────────────────────────────────────
 import { useStore } from './store';
-import type { DiagramPreset, Equipment, LineType } from './store';
+import type { CableCatalogItem, DiagramPreset, Equipment, EquipmentOption, LineType } from './store';
 import { isFirebaseConfigured } from './firebaseConfig';
 import { getFirestoreDb, byteSize, MAX_DOC_BYTES } from './cloud';
 
@@ -90,6 +90,52 @@ export async function startLibrarySync(onStatus?: (s: SyncStatus) => void): Prom
       (err) => console.error('라인 타입 동기화 오류', err)
     );
 
+    // ─── 장비 옵션 (equipmentOptions 컬렉션) ────────────────────────────────
+    const equipmentOptionsCol = collection(db, 'equipmentOptions');
+    let equipmentOptionsSeeded = false;
+
+    onSnapshot(
+      equipmentOptionsCol,
+      (snap) => {
+        if (snap.empty && !equipmentOptionsSeeded) {
+          equipmentOptionsSeeded = true;
+          const { equipmentOptions } = useStore.getState();
+          equipmentOptions.forEach((opt) => void writeEquipmentOptionItem(opt));
+          return;
+        }
+        equipmentOptionsSeeded = true;
+        const remote: EquipmentOption[] = [];
+        snap.forEach((d) => remote.push({ id: d.id, ...(d.data() as object) } as EquipmentOption));
+        applyingRemote = true;
+        useStore.setState({ equipmentOptions: remote });
+        applyingRemote = false;
+      },
+      (err) => console.error('장비 옵션 동기화 오류', err)
+    );
+
+    // ─── 기성케이블 카탈로그 (cableCatalog 컬렉션) ───────────────────────────
+    const cableCatalogCol = collection(db, 'cableCatalog');
+    let cableCatalogSeeded = false;
+
+    onSnapshot(
+      cableCatalogCol,
+      (snap) => {
+        if (snap.empty && !cableCatalogSeeded) {
+          cableCatalogSeeded = true;
+          const { cableCatalog } = useStore.getState();
+          cableCatalog.forEach((item) => void writeCableCatalogItem(item));
+          return;
+        }
+        cableCatalogSeeded = true;
+        const remote: CableCatalogItem[] = [];
+        snap.forEach((d) => remote.push({ id: d.id, ...(d.data() as object) } as CableCatalogItem));
+        applyingRemote = true;
+        useStore.setState({ cableCatalog: remote });
+        applyingRemote = false;
+      },
+      (err) => console.error('케이블 카탈로그 동기화 오류', err)
+    );
+
     // ─── 프리셋 (presets 컬렉션) ────────────────────────────────────────────
     const presetsCol = collection(db, 'presets');
     let presetsSeeded = false;
@@ -131,6 +177,14 @@ export async function startLibrarySync(onStatus?: (s: SyncStatus) => void): Prom
 
       if (state.lineTypes !== prev.lineTypes) {
         void diffAndPushLineTypes(prev.lineTypes, state.lineTypes);
+      }
+
+      if (state.equipmentOptions !== prev.equipmentOptions) {
+        void diffAndPushEquipmentOptions(prev.equipmentOptions, state.equipmentOptions);
+      }
+
+      if (state.cableCatalog !== prev.cableCatalog) {
+        void diffAndPushCableCatalog(prev.cableCatalog, state.cableCatalog);
       }
 
       if (state.presets !== prev.presets) {
@@ -222,6 +276,74 @@ async function diffAndPushLineTypes(prev: LineType[], next: LineType[]): Promise
     }
   } catch (e) {
     console.error('라인 타입 동기화 실패', e);
+  }
+}
+
+async function writeEquipmentOptionItem(opt: EquipmentOption): Promise<void> {
+  try {
+    const db = await getFirestoreDb();
+    const { doc, setDoc } = await import('firebase/firestore');
+    const { id, ...fields } = opt;
+    await setDoc(doc(db, 'equipmentOptions', id), fields);
+  } catch (e) {
+    console.error('장비 옵션 저장 실패', opt.id, e);
+  }
+}
+
+async function diffAndPushEquipmentOptions(prev: EquipmentOption[], next: EquipmentOption[]): Promise<void> {
+  try {
+    const db = await getFirestoreDb();
+    const { doc, deleteDoc } = await import('firebase/firestore');
+    const prevById = new Map(prev.map((o) => [o.id, o]));
+    const nextIds = new Set(next.map((o) => o.id));
+
+    for (const opt of next) {
+      const old = prevById.get(opt.id);
+      if (!old || JSON.stringify(old) !== JSON.stringify(opt)) {
+        await writeEquipmentOptionItem(opt);
+      }
+    }
+    for (const opt of prev) {
+      if (!nextIds.has(opt.id)) {
+        await deleteDoc(doc(db, 'equipmentOptions', opt.id));
+      }
+    }
+  } catch (e) {
+    console.error('장비 옵션 동기화 실패', e);
+  }
+}
+
+async function writeCableCatalogItem(item: CableCatalogItem): Promise<void> {
+  try {
+    const db = await getFirestoreDb();
+    const { doc, setDoc } = await import('firebase/firestore');
+    const { id, ...fields } = item;
+    await setDoc(doc(db, 'cableCatalog', id), fields);
+  } catch (e) {
+    console.error('케이블 카탈로그 저장 실패', item.id, e);
+  }
+}
+
+async function diffAndPushCableCatalog(prev: CableCatalogItem[], next: CableCatalogItem[]): Promise<void> {
+  try {
+    const db = await getFirestoreDb();
+    const { doc, deleteDoc } = await import('firebase/firestore');
+    const prevById = new Map(prev.map((c) => [c.id, c]));
+    const nextIds = new Set(next.map((c) => c.id));
+
+    for (const item of next) {
+      const old = prevById.get(item.id);
+      if (!old || JSON.stringify(old) !== JSON.stringify(item)) {
+        await writeCableCatalogItem(item);
+      }
+    }
+    for (const item of prev) {
+      if (!nextIds.has(item.id)) {
+        await deleteDoc(doc(db, 'cableCatalog', item.id));
+      }
+    }
+  } catch (e) {
+    console.error('케이블 카탈로그 동기화 실패', e);
   }
 }
 

@@ -111,17 +111,37 @@ React + TypeScript + Vite 기반의 **AV System Configuration Builder**.
 ## 노드 데이터 구조
 
 ```typescript
+type EquipmentCategory =
+  | 'video' | 'display' | 'conferencing' | 'audio'
+  | 'control' | 'network' | 'broadcast' | 'etc';
+
 interface Equipment {
   id: string;
-  category: 'video' | 'audio' | 'control' | 'network';
-  name: string;
+  category: EquipmentCategory;
+  name: string;         // 사이드바 소분류 그룹핑 키 겸용 (예: "매트릭스 카드", "PTZ 카메라")
   model: string;
+  manufacturer?: string;
+  description?: string;
+  series?: string;      // 모듈형 프레임 제품군 태그 (예: "XDM 시리즈") — EquipmentOption.compatibleSeries와 매칭
   imageUrl?: string;
-  quantity?: string;   // 예: "x3", "21ea" — 노드 헤더 배지 + LOD 오버레이에 표시
-  isReused?: boolean;  // true면 노드 헤더에 "재활용" 황색 배지
+  quantity?: string;    // 예: "x3", "21ea" — 노드 헤더 배지 + LOD 오버레이에 표시
+  isReused?: boolean;   // true면 노드 헤더에 "재활용" 황색 배지
+  selectedOptionIds?: string[]; // 노드에 적용된 EquipmentOption id 목록
+  optionPortIds?: string[];     // 옵션이 주입한 포트 id (옵션 해제 시 정확히 제거하기 위한 마커)
   inputs: Port[];
   outputs: Port[];
   bidirectional: Port[];
+}
+
+// 장비에 장착 가능한 옵션 카드/액세서리 (독립 카탈로그, 다대다 호환)
+interface EquipmentOption {
+  id: string;
+  name: string;
+  model?: string;
+  manufacturer?: string;
+  compatibleModels?: string[];  // 특정 모델명 (접두 일치)
+  compatibleSeries?: string[];  // 제품군 단위 (Equipment.series와 정확히 일치)
+  addPorts: { inputs: Port[]; outputs: Port[]; bidirectional: Port[] };
 }
 ```
 
@@ -129,6 +149,15 @@ interface Equipment {
 - 입력: `in-{type}-{n}` (예: `in-sdi-1`)
 - 출력: `out-{type}-{n}` (예: `out-hdmi-1`)
 - 양방향: `both-{type}-{n}` → 핸들 ID는 `source_both-*`, `target_both-*`
+
+### 카테고리 → 사이드바 그룹핑
+- `EquipmentCategory` 8종은 사이드바 대분류 섹션 (`src/App.tsx`의 `categories` 배열)
+- 각 카테고리 안에서 `name` 값이 같은 장비끼리 다시 묶어 접이식 소그룹으로 표시 (`App.tsx` 사이드바 렌더링, [1094행 부근](src/App.tsx#L1094)) — 새 필드 없이 기존 `name` 재사용. 그룹에 항목이 1개뿐이면 소그룹 UI 없이 바로 노출
+
+### 장비 옵션 (`EquipmentOption`)
+- `useStore().equipmentOptions`에 독립 카탈로그로 보관 (Firestore `equipmentOptions` 컬렉션과 실시간 동기화)
+- `getAvailableOptionsForEquipment(equipment, catalog)` (`store.ts`)로 특정 장비에 적용 가능한 옵션 조회 — `compatibleModels`는 `equipment.model.startsWith()` 접두 일치, `compatibleSeries`는 `equipment.series`와 정확히 일치
+- `EditNodeModal`에서 체크박스로 다중 선택 → 선택된 옵션들의 `addPorts`가 노드의 실제 inputs/outputs/bidirectional에 병합됨. 병합된 포트 id는 `optionPortIds`에 기록해두고, 옵션 해제 시 정확히 그 id들만 제거 (수동으로 추가한 base 포트는 건드리지 않음)
 
 ---
 
@@ -162,6 +191,10 @@ interface Equipment {
 - **팀 공용 라이브러리 실시간 동기화 (Firebase Firestore)** — 장비 DB·라인 타입·프리셋을 클라우드에 두고 로그인 없이 모든 기기에서 공통 표시. `onSnapshot` 실시간 반영 + 로컬 변경 자동 push (`librarySync.ts`). 헤더에 동기화 상태 배지
 - **Firestore 데이터 정규화** — 장비 DB·라인 타입을 `equipment/{id}`·`lineTypes/{id}` 개별 문서로 분리(항목 1개 = 문서 1개), 프리셋·공유 링크는 `nodes`/`edges`만 저장하도록 경량화 (자세한 내용은 아래 클라우드 아키텍처 참고)
 - **장비 라이브러리 검색** — 사이드바 검색창으로 이름·모델 기준 클라이언트 필터링. 매칭 없는 카테고리는 자동 숨김
+- **카테고리 8종 세분화 + 소분류 그룹핑** — `video/audio/control/network` 4종 → `video/display/conferencing/audio/control/network/broadcast/etc` 8종으로 확장. 각 카테고리 안에서 `name`(제품유형) 기준 2단 접이식 그룹핑 추가 (새 필드 없이 기존 `name` 재사용)
+- **장비 옵션 시스템** — 장비에 장착 가능한 카드/액세서리를 독립 카탈로그(`EquipmentOption`)로 관리. 하나의 옵션이 특정 모델(`compatibleModels`) 또는 모듈형 프레임 제품군 전체(`compatibleSeries`)에 다대다로 호환 가능. `EditNodeModal`에서 옵션 선택 시 포트 구성 자동 반영 (`getAvailableOptionsForEquipment`)
+- **BOM 기성케이블 카탈로그 연동** — `CableCatalogItem` 독립 컬렉션 추가. BOM 일괄/개별 입력 화면에서 자유 텍스트 대신 카탈로그 검색·선택 가능 (직접 입력도 계속 허용)
+- **엑셀 원본 데이터 기반 장비 DB 대량 확충** — 자체 정리한 장비 리스트(`av-system-builder-raw-data.xlsx`, 저장소 미포함)를 `scripts/seed-equipment-from-excel.mjs`로 일괄 변환해 장비 747개·옵션 137개·케이블 카탈로그 169개를 Firestore에 반영 (전원/랙/판넬류 25개는 제외, 자세한 매핑 규칙은 `EQUIPMENT_DB_SCHEMA.md` 참고)
 
 ---
 
@@ -169,9 +202,9 @@ interface Equipment {
 
 **핵심 원칙 (v1.10 정규화 이후):** 캔버스 노드는 배치 시점의 장비 정보를 통째로 품고(`data: {...equipment}`), 엣지는 생성 시점의 색상을 직접 품는다(`style.stroke`). 즉 노드/엣지는 카탈로그 없이도 항상 정상 렌더링되는 자기완결적 데이터다. 그래서 카탈로그(장비 DB·라인 타입)는 정규화된 전용 컬렉션에만 두고, 프리셋·공유 링크는 카탈로그를 중복 저장하지 않는다.
 
-### 1) 카탈로그 (실시간, 정규화) — `equipment` / `lineTypes` 컬렉션
-- **대상:** 장비 DB · 라인 타입 (사용자가 추가/수정한 값)
-- **저장 구조:** 항목 1개 = 문서 1개 — `equipment/{equipmentId}`, `lineTypes/{lineTypeId}` (네이티브 필드, JSON 문자열 아님)
+### 1) 카탈로그 (실시간, 정규화) — `equipment` / `lineTypes` / `equipmentOptions` / `cableCatalog` 컬렉션
+- **대상:** 장비 DB · 라인 타입 · 장비 옵션 · 기성케이블 카탈로그 (사용자가 추가/수정한 값)
+- **저장 구조:** 항목 1개 = 문서 1개 — `equipment/{equipmentId}`, `lineTypes/{lineTypeId}`, `equipmentOptions/{optionId}`, `cableCatalog/{cableId}` (네이티브 필드, JSON 문자열 아님)
 - **동작 (`librarySync.ts`):** 앱 마운트 시 `startLibrarySync()` 1회 호출 → 컬렉션 단위 `onSnapshot` 으로 원격→로컬 실시간 반영, `useStore.subscribe` 에서 변경 전/후 배열을 diff해 **바뀐 문서만** 개별 `setDoc`/`deleteDoc` (배열 전체를 통째로 재직렬화하지 않음)
 - **무한 루프 방지:** 원격 반영 중에는 `applyingRemote` 플래그로 push 스킵
 - **최초 시드:** 클라우드가 비어 있으면 현재 로컬 값 업로드, 이후 클라우드가 소스 오브 트루스
@@ -203,9 +236,12 @@ service cloud.firestore {
     match /lineTypes/{docId} { allow read, write: if true; }
     match /presets/{docId}   { allow read, write: if true; }
     match /workspace/{docId} { allow read, write: if true; } // 마이그레이션 검증 끝나면 삭제 가능 (아래 참고)
+    match /equipmentOptions/{docId} { allow read, write: if true; }
+    match /cableCatalog/{docId}     { allow read, write: if true; }
   }
 }
 ```
+> `equipmentOptions`/`cableCatalog`는 2026-07-03 추가된 컬렉션 — Firebase 콘솔에서 규칙을 수동으로 갱신해야 동기화가 동작한다 (이 저장소에는 `firebase.json`/`firestore.rules`가 없어 콘솔에서 직접 게시하는 방식).
 
 ### 레거시 구조 마이그레이션 (v1.10)
 - v1.9까지는 장비 DB·라인 타입이 `workspace/library` 문서 1개에 JSON 문자열로 통째로 저장되고, 프리셋·공유 링크도 카탈로그 전체를 매번 복제해 저장했다
@@ -215,6 +251,12 @@ service cloud.firestore {
   3. `--apply --trim-presets` — 프리셋 문서에서 레거시 `equipmentDB`/`lineTypes` 필드 제거 (구코드가 아직 쓰이는 동안 실행하면 구코드의 `loadPreset`이 깨지므로 반드시 2단계 이후에만)
   4. `--apply --delete-legacy` — `workspace/library` 문서 삭제 (되돌릴 수 없는 마지막 단계)
 - 2026-07-02 기준 1단계까지 운영 반영 완료 (장비 26개·라인 타입 6개 이전 확인)
+
+### 엑셀 원본 데이터 일괄 시드 (`scripts/seed-equipment-from-excel.mjs`)
+- 2026-07-03, 자체 정리한 장비 리스트를 장비 DB·옵션·케이블 카탈로그로 일괄 변환해 Firestore에 추가 (일회성 실행, 순수 추가라 재실행해도 안전 — 같은 id로 덮어씀)
+- xlsx 파싱은 `xlsx`(SheetJS) 패키지 사용 — 자체 regex 파서는 셀 내부 줄바꿈을 별도 행으로 잘못 인식하는 버그가 있었으므로 반드시 이 라이브러리를 통해서만 파싱할 것
+- 매핑 규칙(카테고리 8종 매핑, 옵션 상위 모델/시리즈 판정, 포트 정보 파싱 규칙 등) 전체는 `EQUIPMENT_DB_SCHEMA.md` 참고
+- 원본 엑셀 파일(`av-system-builder-raw-data.xlsx`)은 일회성 입력 자료라 `.gitignore` 처리, 저장소에 커밋하지 않음
 
 ### 제약
 - Firestore 문서 한도 1 MiB → 업로드 이미지(Base64) 많으면 초과 가능. `librarySync.ts`가 항목별 900KB 초과 시 경고하고 해당 항목 동기화 스킵. 대형 프로젝트는 JSON Export 권장
@@ -234,7 +276,8 @@ service cloud.firestore {
 
 1. **실시간 협업** — WebSockets 또는 CRDT 기반 동시 편집 (현재 팀 공용 동기화는 last-write-wins 방식)
 2. **마이크 커버리지 시뮬레이션** — Shure MXA925 등 수음 범위 오버레이 위젯
-3. **글로벌 벤더 카탈로그 연동** — Shure, Crestron, Extron 등 벤더 장비 DB 임포트 (사용자 장비 DB 클라우드 동기화는 v1.8에서 완료)
+3. **글로벌 벤더 카탈로그 연동** — Shure, Crestron, Extron 등 벤더 장비 DB 임포트 (사용자 장비 DB 클라우드 동기화는 v1.8에서 완료, 자체 정리 카탈로그 일괄 반영은 2026-07-03 완료 — 남은 건 해외 벤더 카탈로그 자동 연동)
+4. **BOM 케이블 카탈로그 관리 UI** — `cableCatalog` 컬렉션은 현재 시드 스크립트로만 채워짐. 팀이 직접 카탈로그 항목을 추가·수정할 수 있는 화면 필요 (장비 DB의 `AddEquipmentModal`에 대응하는 것이 아직 없음)
 
 ---
 

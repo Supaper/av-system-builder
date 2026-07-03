@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useStore } from './store';
+import { useStore, getDefaultPortTypeForCategory } from './store';
 import type { EquipmentCategory, Port, PortType } from './store';
 import { Upload } from 'lucide-react';
 
@@ -9,9 +9,11 @@ interface Props {
 
 export function AddEquipmentModal({ onClose }: Props) {
   const addEquipment = useStore((state) => state.addEquipment);
-  
+
   const [name, setName] = useState('');
   const [model, setModel] = useState('');
+  const [manufacturer, setManufacturer] = useState('');
+  const [description, setDescription] = useState('');
   const [category, setCategory] = useState<EquipmentCategory>('video');
   const [inputs, setInputs] = useState(1);
   const [outputs, setOutputs] = useState(1);
@@ -44,11 +46,8 @@ export function AddEquipmentModal({ onClose }: Props) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    const defaultType: PortType = 
-      category === 'video' ? 'video' :
-      category === 'audio' ? 'audio' :
-      category === 'control' ? 'control' : 'network';
+
+    const defaultType: PortType = getDefaultPortTypeForCategory(category);
 
     const generatedInputs: Port[] = Array.from({ length: inputs }).map((_, i) => ({
       id: `in-${i + 1}`,
@@ -71,11 +70,13 @@ export function AddEquipmentModal({ onClose }: Props) {
       direction: 'both'
     }));
 
-    addEquipment({ 
-      name, 
-      model, 
-      category, 
-      inputs: generatedInputs, 
+    addEquipment({
+      name,
+      model,
+      manufacturer: manufacturer || undefined,
+      description: description || undefined,
+      category,
+      inputs: generatedInputs,
       outputs: generatedOutputs,
       bidirectional: generatedBidi,
       imageUrl
@@ -121,17 +122,43 @@ export function AddEquipmentModal({ onClose }: Props) {
 
           <div>
             <label style={{ display: 'block', marginBottom: '4px', fontSize: '0.875rem' }}>Category</label>
-            <select 
-              className="glass-input" 
-              value={category} 
+            <select
+              className="glass-input"
+              value={category}
               onChange={e => setCategory(e.target.value as EquipmentCategory)}
               style={{ backgroundColor: 'var(--panel-bg)' }}
             >
               <option value="video">Video</option>
+              <option value="display">Display</option>
+              <option value="conferencing">Conferencing</option>
               <option value="audio">Audio</option>
               <option value="control">Control</option>
               <option value="network">Network</option>
+              <option value="broadcast">Broadcast</option>
+              <option value="etc">Etc</option>
             </select>
+          </div>
+
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <div style={{ flex: 1 }}>
+              <label style={{ display: 'block', marginBottom: '4px', fontSize: '0.875rem' }}>Manufacturer (Optional)</label>
+              <input
+                className="glass-input"
+                value={manufacturer}
+                onChange={e => setManufacturer(e.target.value)}
+                placeholder="e.g. RTCOM"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label style={{ display: 'block', marginBottom: '4px', fontSize: '0.875rem' }}>Description (Optional)</label>
+            <input
+              className="glass-input"
+              value={description}
+              onChange={e => setDescription(e.target.value)}
+              placeholder="e.g. 4K/60P지원"
+            />
           </div>
 
           <div>
