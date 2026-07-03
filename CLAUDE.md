@@ -197,6 +197,7 @@ interface EquipmentOption {
 - **엑셀 원본 데이터 기반 장비 DB 대량 확충** — 자체 정리한 장비 리스트(`av-system-builder-raw-data.xlsx`, 저장소 미포함)를 `scripts/seed-equipment-from-excel.mjs`로 일괄 변환해 장비 747개·옵션 137개·케이블 카탈로그 169개를 Firestore에 반영 (전원/랙/판넬류 25개는 제외, 자세한 매핑 규칙은 `EQUIPMENT_DB_SCHEMA.md` 참고)
 - **다크/라이트 모드** — 헤더 해/달 토글, LocalStorage `av-builder-theme` 저장. 테마 색상은 전부 `src/index.css`의 CSS 변수로 관리 (`:root` = 다크 기본, `[data-theme='light']` 오버라이드) — 새 UI 작성 시 하드코딩 색상 대신 반드시 변수 사용 (`--subtle-bg`, `--hover-bg`, `--modal-bg`, `--input-bg`, `--divider` 등)
 - **사이드바 계층 시각 구분** — 대분류는 악센트 배경 띠(`.category-title`), 중분류는 들여쓰기+왼쪽 가이드선(`.equipment-subgroup-title`, `.equipment-subgroup-items`)
+- **장비 라이브러리 그룹핑 토글** — 카테고리/제조사 기준 전환 (`groupMode` state, LocalStorage `av-builder-group-mode` 저장). 제조사 섹션은 `manufacturer` 값에서 동적 생성(`librarySections`), 두 모드 모두 동일한 `name` 기준 중분류 적용. ⚠️ `App.tsx`에서 lucide-react의 `Map` 아이콘 import가 전역 `Map` 생성자를 가리므로 새 코드에서 `new Map()` 사용 금지 (Record 사용)
 
 ---
 
