@@ -203,7 +203,7 @@ export function BomBulkModal({ onClose }: Props) {
             </div>
           ) : (
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
-              <thead style={{ position: 'sticky', top: 0, background: 'rgba(10,16,32,0.97)', zIndex: 1 }}>
+              <thead style={{ position: 'sticky', top: 0, background: 'var(--modal-bg)', zIndex: 1 }}>
                 <tr>
                   <th style={thStyle}>연결 (From → To)</th>
                   <th style={{ ...thStyle, width: 120 }}>케이블 종류</th>
@@ -255,7 +255,7 @@ export function BomBulkModal({ onClose }: Props) {
                             }}
                           >
                             {lineTypes.map(lt => (
-                              <option key={lt.id} value={lt.id} style={{ background: '#0f172a', color: lt.color }}>
+                              <option key={lt.id} value={lt.id} style={{ background: 'var(--modal-bg)', color: lt.color }}>
                                 {lt.name}
                               </option>
                             ))}

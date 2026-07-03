@@ -8,7 +8,7 @@ import {
 } from '@xyflow/react';
 import type { Node, Edge } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { Plus, Minus, Maximize, Download, Upload, FileText, LayoutTemplate, Settings, Video, Mic, Cpu, Network, Monitor, Users, Radio, MoreHorizontal, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, FolderOpen, Save, Trash2, Grid, Map, Lock, Unlock, Undo2, Redo2, ClipboardList, Share2, Cloud, CloudOff, Search, X } from 'lucide-react';
+import { Plus, Minus, Maximize, Download, Upload, FileText, LayoutTemplate, Settings, Video, Mic, Cpu, Network, Monitor, Users, Radio, MoreHorizontal, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, FolderOpen, Save, Trash2, Grid, Map, Lock, Unlock, Undo2, Redo2, ClipboardList, Share2, Cloud, CloudOff, Search, X, Sun, Moon } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import jsPDF from 'jspdf';
@@ -61,6 +61,14 @@ function FlowBuilder() {
   const [hiddenLineTypeIds, setHiddenLineTypeIds] = useState<string[]>([]);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [equipmentSearch, setEquipmentSearch] = useState('');
+
+  const [theme, setTheme] = useState<'dark' | 'light'>(() =>
+    (localStorage.getItem('av-builder-theme') as 'dark' | 'light') || 'dark'
+  );
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem('av-builder-theme', theme);
+  }, [theme]);
 
   const filteredEquipmentDB = useMemo(() => {
     const q = equipmentSearch.trim().toLowerCase();
@@ -491,8 +499,8 @@ function FlowBuilder() {
     // wait a tiny bit for render and class application
     setTimeout(async () => {
       try {
-        const dataUrl = await toPng(element, { 
-          backgroundColor: '#0f172a',
+        const dataUrl = await toPng(element, {
+          backgroundColor: theme === 'light' ? '#f1f5f9' : '#0f172a',
           filter: () => {
             // Alternatively, use HTML filter to exclude controls, but CSS class is easier
             return true;
@@ -582,7 +590,7 @@ function FlowBuilder() {
         <div className="header-title">
           <Settings size={14} color="var(--accent-color)" />
           <span>AV System Builder</span>
-          <span className="version-tag">v1.10</span>
+          <span className="version-tag">v1.12</span>
           <button
             className="glass-button icon-btn"
             onClick={handleNewDiagram}
@@ -733,6 +741,15 @@ function FlowBuilder() {
 
         {/* Right Actions */}
         <div className="header-actions">
+          {/* Theme Toggle */}
+          <button
+            className="glass-button icon-btn"
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            title={theme === 'dark' ? '라이트 모드로 전환' : '다크 모드로 전환'}
+          >
+            {theme === 'dark' ? <Sun size={13} /> : <Moon size={13} />}
+          </button>
+
           {/* Preset Manager Dropdown */}
           <div className="dropdown-container">
             <button className="glass-button" onClick={() => setIsPresetMenuOpen(!isPresetMenuOpen)}>
@@ -1152,7 +1169,11 @@ function FlowBuilder() {
                         <span>{group.name} ({group.items.length})</span>
                         {isSubOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
                       </div>
-                      {isSubOpen && group.items.map(eq => renderEquipmentItem(eq))}
+                      {isSubOpen && (
+                        <div className="equipment-subgroup-items">
+                          {group.items.map(eq => renderEquipmentItem(eq))}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -1200,7 +1221,7 @@ function FlowBuilder() {
             snapGrid={[15, 15]}
             nodesDraggable={!isDiagramLocked}
           >
-            <Background color="rgba(255, 255, 255, 0.1)" gap={16} />
+            <Background color={theme === 'light' ? 'rgba(15, 23, 42, 0.18)' : 'rgba(255, 255, 255, 0.1)'} gap={16} />
 
             {/* Standalone Floating MiniMap (Conditional) - Nested inside ReactFlow to use context */}
             {showMiniMap && (
@@ -1215,7 +1236,7 @@ function FlowBuilder() {
                   borderRadius: '12px',
                   boxSizing: 'border-box',
                   border: '1px solid var(--panel-border)',
-                  backgroundColor: 'rgba(15, 23, 42, 0.6)',
+                  backgroundColor: theme === 'light' ? 'rgba(241, 245, 249, 0.7)' : 'rgba(15, 23, 42, 0.6)',
                   boxShadow: '0 10px 30px rgba(0, 0, 0, 0.5)',
                   margin: 0,
                   pointerEvents: 'all'
@@ -1235,7 +1256,7 @@ function FlowBuilder() {
                     if (node.type === 'annotation') return '#38bdf8';
                     return '#6366f1';
                   }}
-                  maskColor="rgba(0, 0, 0, 0.4)"
+                  maskColor={theme === 'light' ? 'rgba(148, 163, 184, 0.35)' : 'rgba(0, 0, 0, 0.4)'}
                   zoomable
                   pannable
                 />

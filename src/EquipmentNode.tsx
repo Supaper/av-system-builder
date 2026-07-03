@@ -62,7 +62,7 @@ export function EquipmentNode({ data }: NodeProps<EquipmentNodeType>) {
     return (
       <div key={port.id} style={{ position: 'relative', height: 24, display: 'flex', alignItems: 'center' }}>
         <Handle type="target" position={Position.Left} id={port.id}
-          style={{ background: c, width: 8, height: 8, left: -16, border: '1.5px solid #fff' }} />
+          style={{ background: c, width: 8, height: 8, left: -16, border: '1.5px solid var(--handle-border)' }} />
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           <div style={{ width: 5, height: 5, borderRadius: '50%', background: c }} />
           <span style={{ fontSize: 10, color: 'var(--text-secondary)' }}>{port.label}</span>
@@ -80,7 +80,7 @@ export function EquipmentNode({ data }: NodeProps<EquipmentNodeType>) {
           <div style={{ width: 5, height: 5, borderRadius: '50%', background: c }} />
         </div>
         <Handle type="source" position={Position.Right} id={port.id}
-          style={{ background: c, width: 8, height: 8, right: -16, border: '1.5px solid #fff' }} />
+          style={{ background: c, width: 8, height: 8, right: -16, border: '1.5px solid var(--handle-border)' }} />
       </div>
     );
   });
@@ -90,7 +90,7 @@ export function EquipmentNode({ data }: NodeProps<EquipmentNodeType>) {
     return (
       <div key={port.id} style={{ position: 'relative', height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
         <Handle type="target" position={Position.Left} id={`target_${port.id}`}
-          style={{ background: c, width: 8, height: 8, left: -16, border: '1.5px solid #fff' }} />
+          style={{ background: c, width: 8, height: 8, left: -16, border: '1.5px solid var(--handle-border)' }} />
         <span style={{
           fontSize: 10, color: 'var(--text-primary)', background: 'rgba(255,255,255,0.04)',
           padding: '2px 8px', borderRadius: 4, border: `1px solid ${c}44`,
@@ -99,7 +99,7 @@ export function EquipmentNode({ data }: NodeProps<EquipmentNodeType>) {
           <span style={{ color: c }}>↔</span> {port.label}
         </span>
         <Handle type="source" position={Position.Right} id={`source_${port.id}`}
-          style={{ background: c, width: 8, height: 8, right: -16, border: '1.5px solid #fff' }} />
+          style={{ background: c, width: 8, height: 8, right: -16, border: '1.5px solid var(--handle-border)' }} />
       </div>
     );
   });
@@ -136,7 +136,7 @@ export function EquipmentNode({ data }: NodeProps<EquipmentNodeType>) {
             position: 'absolute',
             inset: 0,
             borderRadius: 7,
-            background: 'rgba(8, 14, 28, 0.95)',
+            background: 'var(--lod-overlay-bg)',
             zIndex: 2,
             pointerEvents: 'none',
             overflow: 'hidden',          // text stays inside node
@@ -151,11 +151,10 @@ export function EquipmentNode({ data }: NodeProps<EquipmentNodeType>) {
           <div style={{
             fontSize: overlayNameSize,
             fontWeight: 800,
-            color: '#ffffff',
+            color: 'var(--lod-overlay-text)',
             lineHeight: 1.25,
             wordBreak: 'break-word',
             overflowWrap: 'break-word',
-            textShadow: '0 1px 6px rgba(0,0,0,0.9)',
           }}>
             {data.name}
           </div>
@@ -164,7 +163,7 @@ export function EquipmentNode({ data }: NodeProps<EquipmentNodeType>) {
           {!isCompact && (
             <div style={{
               fontSize: overlayModelSize,
-              color: 'rgba(255,255,255,0.5)',
+              color: 'var(--lod-overlay-text-dim)',
               lineHeight: 1.2,
               wordBreak: 'break-word',
             }}>
