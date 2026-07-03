@@ -200,6 +200,7 @@ export function EditNodeModal({ nodeId, initialData, onClose }: Props) {
                       <span style={{ fontWeight: 600 }}>{opt.name}</span>
                       {opt.model && <span style={{ color: 'var(--text-secondary)' }}>({opt.model})</span>}
                       <span style={{ color: 'var(--text-secondary)', fontSize: '0.7rem' }}>포트 {portCount}개 추가</span>
+                      {opt.description && <span style={{ color: 'var(--text-secondary)', fontSize: '0.7rem', fontStyle: 'italic' }}>— {opt.description}</span>}
                     </label>
                   );
                 })}

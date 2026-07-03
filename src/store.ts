@@ -108,6 +108,7 @@ export interface EquipmentOption extends Record<string, unknown> {
   name: string;
   model?: string;
   manufacturer?: string;
+  description?: string;
   /** 특정 모델명 지정 (접두 일치로 판정, 예: ["BLU-101"]) */
   compatibleModels?: string[];
   /** 제품군 단위 지정 (Equipment.series와 정확히 일치, 예: ["XDM 시리즈"]) */

@@ -12,11 +12,14 @@ Format: `## [vX.Y] — YYYY-MM-DD` / Added · Changed · Fixed · Removed
 - **사이드바 소분류 그룹핑** — 각 카테고리 안에서 `name`(제품유형, 예: "매트릭스 카드", "PTZ 카메라") 기준으로 2단 접이식 그룹 표시. 새 필드 추가 없이 기존 `name` 필드 재사용
 - **장비 옵션 시스템** — 장비에 장착 가능한 카드/액세서리를 독립 카탈로그(`EquipmentOption`, Firestore `equipmentOptions` 컬렉션)로 관리. 옵션 하나가 특정 모델 또는 모듈형 프레임 제품군 전체(예: RTCOM XDM/SPX/VDM 시리즈)에 다대다로 호환 가능. `EditNodeModal`에서 체크박스로 옵션 선택 시 포트 구성 자동 반영
 - **BOM 기성케이블 카탈로그** — `CableCatalogItem` 독립 컬렉션(`cableCatalog`) 추가. BOM 일괄/개별 입력 화면에서 제조사·모델 기반 카탈로그 검색·선택 가능
-- **`Equipment`에 `manufacturer`/`description`/`series` 필드 추가**
+- **`Equipment`에 `manufacturer`/`description`/`series` 필드 추가, `EquipmentOption`에 `description` 필드 추가**
 - 자체 정리한 장비 리스트(엑셀)를 `scripts/seed-equipment-from-excel.mjs`로 일괄 변환해 장비 747개·옵션 137개·케이블 카탈로그 169개를 Firestore에 반영
 
 ### Changed
 - Firestore 보안 규칙에 `equipmentOptions`/`cableCatalog` 컬렉션 추가 (기존 컬렉션과 동일하게 로그인 없이 읽기/쓰기 허용)
+
+### Fixed
+- **옵션 137개 전부 "포트 0개 추가"로 뜨던 문제** — 원본 엑셀의 "포트 정보" 컬럼이 옵션 행에서는 전부 비어있었던 것이 원인. 모델명에 채널 수 근거가 명확한 44개(RTCOM XDM/SPX/VDM/UX 매트릭스 카드 39개, Dante 카드 2개, SFP 트랜시버 8개... 중 일부 중복 제외)는 모델명 패턴(커넥터 코드+I/O+채널수) 기반으로 포트를 정확히 채웠고, 근거 없는 나머지 93개(컨트롤러·렌즈·램프·브라켓·전원공급장치 등)는 잘못된 스펙을 넣는 것보다 안전하도록 0포트로 유지
 
 ---
 
