@@ -140,6 +140,66 @@ function cleanOrUndefined(v) {
   return v ? v : undefined;
 }
 
+function buildPorts(count, type, direction, idPrefix) {
+  const ports = [];
+  for (let i = 0; i < count; i++) {
+    ports.push({ id: `${idPrefix}-${direction}-${i + 1}`, label: `${direction === 'in' ? 'In' : 'Out'} ${i + 1}`, type, direction });
+  }
+  return ports;
+}
+
+/**
+ * 옵션(카드류)의 "포트 정보" 컬럼은 원본에 전부 비어있어(0/141) parsePortInfo가 무용하다.
+ * 대신 모델명에 근거가 명확한 것만 최선 추정한다 (RTCOM XDM/SPX/VDM/UX 매트릭스 카드,
+ * Dante 카드, SFP 트랜시버). 근거 없는 나머지(컨트롤러/렌즈/램프/브라켓/전원 등)는
+ * 잘못된 스펙을 박아넣는 것보다 0포트로 남기는 편이 안전하므로 건드리지 않는다.
+ */
+function inferOptionPorts(productName, model, description, idPrefix) {
+  const inputs = [];
+  const outputs = [];
+  const bidirectional = [];
+
+  if (productName === '매트릭스 카드') {
+    // Dante 카드: XDM-DANI-8 / XDM-DANO-8 — 이름에 채널수 명시됨
+    let m = model.match(/DAN(I|O)-(\d+)/i);
+    if (m) {
+      const dir = m[1].toUpperCase() === 'I' ? 'in' : 'out';
+      const n = parseInt(m[2], 10);
+      const ports = buildPorts(n, 'audio', dir, idPrefix);
+      (dir === 'in' ? inputs : outputs).push(...ports);
+      return { inputs, outputs, bidirectional };
+    }
+
+    // 설명에 "포트 N개" 식으로 명시된 특수 케이스 (예: QOS4S-U 쿼드뷰 카드)
+    const explicitMatch = description.match(/포트\s*(\d+)\s*개/);
+    if (explicitMatch) {
+      const n = parseInt(explicitMatch[1], 10);
+      outputs.push(...buildPorts(n, 'video', 'out', idPrefix));
+      return { inputs, outputs, bidirectional };
+    }
+
+    // 일반 커넥터 카드: [XDM-|SPX-|UX-|12G-][H|S|C|F|W|DP][I|O]S?-?(채널수)
+    // H=HDMI, S=SDI, C=HDBaseT, F=광, DP=DisplayPort / I=입력, O=출력
+    m = model.match(/^(?:XDM-|SPX-|UX-|12G-)?(H|S|C|F|W|DP)(I|O)S?-?(\d+)/i);
+    if (m) {
+      const dir = m[2].toUpperCase() === 'I' ? 'in' : 'out';
+      let n = parseInt(m[3], 10);
+      // XDM "100"번대는 채널수가 아니라 카드 모델(시리즈) 번호 — 1채널 카드로 취급
+      if (n >= 90) n = 1;
+      const ports = buildPorts(n, 'video', dir, idPrefix);
+      (dir === 'in' ? inputs : outputs).push(...ports);
+      return { inputs, outputs, bidirectional };
+    }
+  }
+
+  // SFP 트랜시버 모듈 = 물리 네트워크 포트 1개
+  if (model.toUpperCase().startsWith('SFP')) {
+    bidirectional.push(...buildPorts(1, 'network', 'both', idPrefix));
+  }
+
+  return { inputs, outputs, bidirectional };
+}
+
 /** Firestore setDoc은 값이 undefined인 필드를 허용하지 않으므로 기록 직전에 제거한다. */
 function stripUndefined(obj) {
   const result = {};
@@ -195,9 +255,9 @@ function parseWorkbook() {
     }
 
     const appCategory = mapCategory(category);
-    const ports = parsePortInfo(portInfo, appCategory, `xlsx-${i}`);
 
     if (kind === '옵션') {
+      const ports = inferOptionPorts(productName, model, description, `xlsxopt-${i}`);
       const compatibleModels = [];
       const compatibleSeries = [];
       if (parentModel) {
@@ -211,11 +271,13 @@ function parseWorkbook() {
         name: model || productName,
         model: cleanOrUndefined(model),
         manufacturer: cleanOrUndefined(manufacturer),
+        description: cleanOrUndefined(description),
         compatibleModels: compatibleModels.length ? compatibleModels : undefined,
         compatibleSeries: compatibleSeries.length ? compatibleSeries : undefined,
         addPorts: ports,
       });
     } else {
+      const ports = parsePortInfo(portInfo, appCategory, `xlsx-${i}`);
       equipmentList.push({
         id: `eq-xlsx-${i}`,
         category: appCategory,
