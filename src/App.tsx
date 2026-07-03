@@ -8,7 +8,7 @@ import {
 } from '@xyflow/react';
 import type { Node, Edge } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { Plus, Minus, Maximize, Download, Upload, FileText, LayoutTemplate, Settings, Video, Mic, Cpu, Network, Monitor, Users, Radio, MoreHorizontal, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, FolderOpen, Save, Trash2, Grid, Map, Lock, Unlock, Undo2, Redo2, ClipboardList, Share2, Cloud, CloudOff, Search, X, Sun, Moon } from 'lucide-react';
+import { Plus, Minus, Maximize, Download, Upload, FileText, LayoutTemplate, Settings, Video, Mic, Cpu, Network, Monitor, Users, Radio, MoreHorizontal, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, FolderOpen, Save, Trash2, Grid, Map, Lock, Unlock, Undo2, Redo2, ClipboardList, Share2, Cloud, CloudOff, Search, X, Sun, Moon, Factory, LayoutGrid } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import jsPDF from 'jspdf';
@@ -69,6 +69,13 @@ function FlowBuilder() {
     document.documentElement.dataset.theme = theme;
     localStorage.setItem('av-builder-theme', theme);
   }, [theme]);
+
+  const [groupMode, setGroupMode] = useState<'category' | 'manufacturer'>(() =>
+    (localStorage.getItem('av-builder-group-mode') as 'category' | 'manufacturer') || 'category'
+  );
+  useEffect(() => {
+    localStorage.setItem('av-builder-group-mode', groupMode);
+  }, [groupMode]);
 
   const filteredEquipmentDB = useMemo(() => {
     const q = equipmentSearch.trim().toLowerCase();
@@ -418,6 +425,35 @@ function FlowBuilder() {
     { key: 'etc', label: 'Etc', icon: MoreHorizontal },
   ];
 
+  const categoryIcons: Record<string, LucideIcon> = Object.fromEntries(
+    categories.map(c => [c.key, c.icon])
+  );
+
+  // 사이드바 대분류 섹션 — 카테고리 모드는 고정 8종, 제조사 모드는 데이터에서 동적 생성
+  const librarySections: { key: string; label: string; icon: LucideIcon; items: Equipment[] }[] =
+    groupMode === 'category'
+      ? categories.map(cat => ({
+          key: cat.key,
+          label: cat.label,
+          icon: cat.icon,
+          items: filteredEquipmentDB.filter(eq => eq.category === cat.key),
+        }))
+      : (() => {
+          // 주의: Map은 lucide-react 아이콘 import에 가려져 있어 Record 사용
+          const byMfr: Record<string, Equipment[]> = {};
+          filteredEquipmentDB.forEach(eq => {
+            const mfr = (eq.manufacturer || '').trim() || '미지정';
+            (byMfr[mfr] ??= []).push(eq);
+          });
+          return Object.entries(byMfr)
+            .sort((a, b) => {
+              if (a[0] === '미지정') return 1;
+              if (b[0] === '미지정') return -1;
+              return a[0].localeCompare(b[0], 'ko');
+            })
+            .map(([mfr, items]) => ({ key: `mfr::${mfr}`, label: mfr, icon: Factory, items }));
+        })();
+
   const handleExportDB = () => {
     const data = JSON.stringify(equipmentDB, null, 2);
     const blob = new Blob([data], { type: 'application/json' });
@@ -590,7 +626,7 @@ function FlowBuilder() {
         <div className="header-title">
           <Settings size={14} color="var(--accent-color)" />
           <span>AV System Builder</span>
-          <span className="version-tag">v1.12</span>
+          <span className="version-tag">v1.13</span>
           <button
             className="glass-button icon-btn"
             onClick={handleNewDiagram}
@@ -1108,12 +1144,32 @@ function FlowBuilder() {
               </button>
             )}
           </div>
+          {/* 그룹핑 모드 토글 — 카테고리 / 제조사 */}
+          <div style={{ display: 'flex', gap: 4, padding: '0 12px 10px' }}>
+            <button
+              type="button"
+              className={`glass-button${groupMode === 'category' ? ' primary' : ''}`}
+              style={{ flex: 1, fontSize: 11 }}
+              onClick={() => setGroupMode('category')}
+            >
+              <LayoutGrid size={12} /> 카테고리
+            </button>
+            <button
+              type="button"
+              className={`glass-button${groupMode === 'manufacturer' ? ' primary' : ''}`}
+              style={{ flex: 1, fontSize: 11 }}
+              onClick={() => setGroupMode('manufacturer')}
+            >
+              <Factory size={12} /> 제조사
+            </button>
+          </div>
           <div className="sidebar-content">
-            {categories.map((cat) => {
+            {librarySections.map((section) => {
               const isSearching = equipmentSearch.trim().length > 0;
-              const items = filteredEquipmentDB.filter(eq => eq.category === cat.key);
+              const items = section.items;
               if (isSearching && items.length === 0) return null;
-              const isOpen = isSearching ? true : openCategories[cat.key];
+              // 카테고리 모드는 기본 펼침(초기 state 시드), 제조사 모드는 섹션이 많아 기본 접힘
+              const isOpen = isSearching ? true : (openCategories[section.key] ?? false);
 
               // name(제품명) 기준 소그룹 — 항목 수와 무관하게 항상 접이식으로 표시
               const groups: { name: string; items: Equipment[] }[] = [];
@@ -1125,6 +1181,7 @@ function FlowBuilder() {
 
               const renderEquipmentItem = (eq: Equipment) => {
                 const displayImg = eq.imageUrl || getDefaultEquipmentImage(eq.name, eq.category);
+                const FallbackIcon = categoryIcons[eq.category] || MoreHorizontal;
                 return (
                   <div
                     key={eq.id}
@@ -1136,7 +1193,7 @@ function FlowBuilder() {
                       {displayImg ? (
                         <img src={displayImg} alt={eq.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       ) : (
-                        <cat.icon size={16} />
+                        <FallbackIcon size={16} />
                       )}
                     </div>
                     <div className="equipment-info">
@@ -1148,17 +1205,22 @@ function FlowBuilder() {
               };
 
               return (
-              <div key={cat.key} className="equipment-category">
+              <div key={section.key} className="equipment-category">
                 <div
                   className="category-title"
                   style={{ display: 'flex', justifyContent: 'space-between', cursor: 'pointer' }}
-                  onClick={() => toggleCategory(cat.key)}
+                  onClick={() => toggleCategory(section.key)}
                 >
-                  {cat.label}
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+                    <section.icon size={12} style={{ flexShrink: 0 }} />
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {section.label} {groupMode === 'manufacturer' && `(${items.length})`}
+                    </span>
+                  </span>
                   {isOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                 </div>
                 {isOpen && groups.map(group => {
-                  const subKey = `${cat.key}::${group.name}`;
+                  const subKey = `${section.key}::${group.name}`;
                   const isSubOpen = isSearching ? true : (openSubGroups[subKey] ?? false);
                   return (
                     <div key={subKey}>
