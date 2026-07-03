@@ -20,7 +20,7 @@ interface Props {
 }
 
 export function BomEdgeModal({ edgeId, onClose }: Props) {
-  const { edges, nodes, lineTypes, setEdges } = useStore();
+  const { edges, nodes, lineTypes, cableCatalog, setEdges } = useStore();
 
   const edge = edges.find(e => e.id === edgeId);
   if (!edge) return null;
@@ -102,6 +102,23 @@ export function BomEdgeModal({ edgeId, onClose }: Props) {
                   {rowLabel(i)}
                 </span>
               )}
+              {row.cableType === 'ready-made' && (() => {
+                const catalogMatches = cableCatalog.filter(c => !c.lineTypeId || c.lineTypeId === lineTypeId);
+                if (catalogMatches.length === 0) return null;
+                return (
+                  <select
+                    value=""
+                    onChange={e => { if (e.target.value) update(i, 'productName', e.target.value); }}
+                    style={{ fontSize: 11, padding: '4px 6px', background: 'rgba(255,255,255,0.06)', border: '1px solid var(--panel-border)', borderRadius: 4, color: 'var(--text-secondary)' }}
+                  >
+                    <option value="">카탈로그에서 선택...</option>
+                    {catalogMatches.map(c => {
+                      const label = `${c.manufacturer ? c.manufacturer + ' ' : ''}${c.name} ${c.model}`.trim();
+                      return <option key={c.id} value={label}>{label}</option>;
+                    })}
+                  </select>
+                );
+              })()}
               <input
                 className="glass-input"
                 style={{ fontSize: 12 }}

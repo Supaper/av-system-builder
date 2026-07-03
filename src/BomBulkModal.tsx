@@ -32,7 +32,7 @@ interface Props {
 }
 
 export function BomBulkModal({ onClose }: Props) {
-  const { nodes, edges, lineTypes, setEdges } = useStore();
+  const { nodes, edges, lineTypes, cableCatalog, setEdges } = useStore();
 
   const [rows, setRows] = useState<BomRow[]>(() => {
     const result: BomRow[] = [];
@@ -264,13 +264,32 @@ export function BomBulkModal({ onClose }: Props) {
                       </td>
                       {/* 제품명 */}
                       <td style={tdStyle}>
-                        <input
-                          className="glass-input"
-                          style={{ width: '100%', fontSize: 11, padding: '4px 7px' }}
-                          placeholder="예: CANARE L-5CFB, MONSTER HDMI 2m"
-                          value={row.productName}
-                          onChange={e => updateRow(row.key, 'productName', e.target.value)}
-                        />
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                          {row.cableType === 'ready-made' && (() => {
+                            const catalogMatches = cableCatalog.filter(c => !c.lineTypeId || c.lineTypeId === row.lineTypeId);
+                            if (catalogMatches.length === 0) return null;
+                            return (
+                              <select
+                                value=""
+                                onChange={e => { if (e.target.value) updateRow(row.key, 'productName', e.target.value); }}
+                                style={{ fontSize: 10, padding: '2px 4px', background: 'rgba(255,255,255,0.06)', border: '1px solid var(--panel-border)', borderRadius: 4, color: 'var(--text-secondary)' }}
+                              >
+                                <option value="">카탈로그에서 선택...</option>
+                                {catalogMatches.map(c => {
+                                  const label = `${c.manufacturer ? c.manufacturer + ' ' : ''}${c.name} ${c.model}`.trim();
+                                  return <option key={c.id} value={label}>{label}</option>;
+                                })}
+                              </select>
+                            );
+                          })()}
+                          <input
+                            className="glass-input"
+                            style={{ width: '100%', fontSize: 11, padding: '4px 7px' }}
+                            placeholder="예: CANARE L-5CFB, MONSTER HDMI 2m"
+                            value={row.productName}
+                            onChange={e => updateRow(row.key, 'productName', e.target.value)}
+                          />
+                        </div>
                       </td>
                       {/* 구분 */}
                       <td style={tdStyle}>

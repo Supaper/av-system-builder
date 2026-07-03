@@ -5,6 +5,21 @@ Format: `## [vX.Y] — YYYY-MM-DD` / Added · Changed · Fixed · Removed
 
 ---
 
+## [v1.11] — 2026-07-03
+
+### Added
+- **카테고리 8종 세분화** — 장비 대분류를 `video/audio/control/network` 4종에서 `video/display/conferencing/audio/control/network/broadcast/etc` 8종으로 확장
+- **사이드바 소분류 그룹핑** — 각 카테고리 안에서 `name`(제품유형, 예: "매트릭스 카드", "PTZ 카메라") 기준으로 2단 접이식 그룹 표시. 새 필드 추가 없이 기존 `name` 필드 재사용
+- **장비 옵션 시스템** — 장비에 장착 가능한 카드/액세서리를 독립 카탈로그(`EquipmentOption`, Firestore `equipmentOptions` 컬렉션)로 관리. 옵션 하나가 특정 모델 또는 모듈형 프레임 제품군 전체(예: RTCOM XDM/SPX/VDM 시리즈)에 다대다로 호환 가능. `EditNodeModal`에서 체크박스로 옵션 선택 시 포트 구성 자동 반영
+- **BOM 기성케이블 카탈로그** — `CableCatalogItem` 독립 컬렉션(`cableCatalog`) 추가. BOM 일괄/개별 입력 화면에서 제조사·모델 기반 카탈로그 검색·선택 가능
+- **`Equipment`에 `manufacturer`/`description`/`series` 필드 추가**
+- 자체 정리한 장비 리스트(엑셀)를 `scripts/seed-equipment-from-excel.mjs`로 일괄 변환해 장비 747개·옵션 137개·케이블 카탈로그 169개를 Firestore에 반영
+
+### Changed
+- Firestore 보안 규칙에 `equipmentOptions`/`cableCatalog` 컬렉션 추가 (기존 컬렉션과 동일하게 로그인 없이 읽기/쓰기 허용)
+
+---
+
 ## [v1.10] — 2026-07-02
 
 ### Added

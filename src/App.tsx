@@ -8,7 +8,7 @@ import {
 } from '@xyflow/react';
 import type { Node, Edge } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { Plus, Minus, Maximize, Download, Upload, FileText, LayoutTemplate, Settings, Video, Mic, Cpu, Network, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, FolderOpen, Save, Trash2, Grid, Map, Lock, Unlock, Undo2, Redo2, ClipboardList, Share2, Cloud, CloudOff, Search, X } from 'lucide-react';
+import { Plus, Minus, Maximize, Download, Upload, FileText, LayoutTemplate, Settings, Video, Mic, Cpu, Network, Monitor, Users, Radio, MoreHorizontal, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, FolderOpen, Save, Trash2, Grid, Map, Lock, Unlock, Undo2, Redo2, ClipboardList, Share2, Cloud, CloudOff, Search, X } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import jsPDF from 'jspdf';
@@ -253,8 +253,10 @@ function FlowBuilder() {
   const [isDiagramLocked, setIsDiagramLocked] = useState(false);
   
   const [openCategories, setOpenCategories] = useState<Record<string, boolean>>({
-    video: true, audio: true, control: true, network: true
+    video: true, display: true, conferencing: true, audio: true,
+    control: true, network: true, broadcast: true, etc: true
   });
+  const [openSubGroups, setOpenSubGroups] = useState<Record<string, boolean>>({});
 
   const [presetName, setPresetName] = useState('');
   const [isPresetMenuOpen, setIsPresetMenuOpen] = useState(false);
@@ -399,9 +401,13 @@ function FlowBuilder() {
 
   const categories: { key: EquipmentCategory; label: string; icon: any }[] = [
     { key: 'video', label: 'Video', icon: Video },
+    { key: 'display', label: 'Display', icon: Monitor },
+    { key: 'conferencing', label: 'Conferencing', icon: Users },
     { key: 'audio', label: 'Audio', icon: Mic },
     { key: 'control', label: 'Control', icon: Cpu },
     { key: 'network', label: 'Network', icon: Network },
+    { key: 'broadcast', label: 'Broadcast', icon: Radio },
+    { key: 'etc', label: 'Etc', icon: MoreHorizontal },
   ];
 
   const handleExportDB = () => {
@@ -1091,6 +1097,39 @@ function FlowBuilder() {
               const items = filteredEquipmentDB.filter(eq => eq.category === cat.key);
               if (isSearching && items.length === 0) return null;
               const isOpen = isSearching ? true : openCategories[cat.key];
+
+              // name(제품명) 기준 소그룹 — 그룹에 항목이 1개뿐이면 접기 UI 없이 바로 노출
+              const groups: { name: string; items: Equipment[] }[] = [];
+              items.forEach(eq => {
+                const g = groups.find(g => g.name === eq.name);
+                if (g) g.items.push(eq);
+                else groups.push({ name: eq.name, items: [eq] });
+              });
+
+              const renderEquipmentItem = (eq: Equipment) => {
+                const displayImg = eq.imageUrl || getDefaultEquipmentImage(eq.name, eq.category);
+                return (
+                  <div
+                    key={eq.id}
+                    className="equipment-item"
+                    draggable
+                    onDragStart={(e) => onDragStart(e, eq.id)}
+                  >
+                    <div className={`equipment-icon ${eq.category}`} style={{ overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: displayImg ? 0 : undefined }}>
+                      {displayImg ? (
+                        <img src={displayImg} alt={eq.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : (
+                        <cat.icon size={16} />
+                      )}
+                    </div>
+                    <div className="equipment-info">
+                      <div className="equipment-name">{eq.name}</div>
+                      <div className="equipment-model">{eq.model}</div>
+                    </div>
+                  </div>
+                );
+              };
+
               return (
               <div key={cat.key} className="equipment-category">
                 <div
@@ -1101,26 +1140,22 @@ function FlowBuilder() {
                   {cat.label}
                   {isOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                 </div>
-                {isOpen && items.map(eq => {
-                  const displayImg = eq.imageUrl || getDefaultEquipmentImage(eq.name, eq.category);
+                {isOpen && groups.map(group => {
+                  if (group.items.length === 1) {
+                    return renderEquipmentItem(group.items[0]);
+                  }
+                  const subKey = `${cat.key}::${group.name}`;
+                  const isSubOpen = isSearching ? true : (openSubGroups[subKey] ?? false);
                   return (
-                    <div 
-                      key={eq.id} 
-                      className="equipment-item"
-                      draggable
-                      onDragStart={(e) => onDragStart(e, eq.id)}
-                    >
-                      <div className={`equipment-icon ${eq.category}`} style={{ overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: displayImg ? 0 : undefined }}>
-                        {displayImg ? (
-                          <img src={displayImg} alt={eq.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        ) : (
-                          <cat.icon size={16} />
-                        )}
+                    <div key={subKey}>
+                      <div
+                        className="equipment-subgroup-title"
+                        onClick={() => setOpenSubGroups(prev => ({ ...prev, [subKey]: !isSubOpen }))}
+                      >
+                        <span>{group.name} ({group.items.length})</span>
+                        {isSubOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
                       </div>
-                      <div className="equipment-info">
-                        <div className="equipment-name">{eq.name}</div>
-                        <div className="equipment-model">{eq.model}</div>
-                      </div>
+                      {isSubOpen && group.items.map(eq => renderEquipmentItem(eq))}
                     </div>
                   );
                 })}

@@ -27,14 +27,50 @@ import {
   svgVideoMatrix, svgTransmitter, svgDesktopPC, svgLaptopPC, svgDistributor,
 } from './svgAssets';
 
-export type EquipmentCategory = 'video' | 'audio' | 'control' | 'network';
+export type EquipmentCategory =
+  | 'video' | 'display' | 'conferencing' | 'audio'
+  | 'control' | 'network' | 'broadcast' | 'etc';
 export type PortType = 'video' | 'audio' | 'control' | 'network';
+
+export const CATEGORY_LABELS: Record<EquipmentCategory, string> = {
+  video: 'Video',
+  display: 'Display',
+  conferencing: 'Conferencing',
+  audio: 'Audio',
+  control: 'Control',
+  network: 'Network',
+  broadcast: 'Broadcast',
+  etc: 'Etc',
+};
+
+/** 카테고리별 기본 PortType (신규 장비 생성 시 초기 포트 타입 추정용) */
+export const getDefaultPortTypeForCategory = (category: EquipmentCategory): PortType => {
+  switch (category) {
+    case 'video':
+    case 'display':
+    case 'conferencing':
+    case 'broadcast':
+      return 'video';
+    case 'audio':
+      return 'audio';
+    case 'control':
+      return 'control';
+    case 'network':
+    case 'etc':
+    default:
+      return 'network';
+  }
+};
 
 export const defaultCategoryImages: Record<EquipmentCategory, string> = {
   video: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 60" fill="none"><rect width="100%" height="100%" rx="4" fill="%231e293b"/><rect x="15" y="10" width="70" height="36" rx="2" fill="%230f172a" stroke="%23334155" stroke-width="1.5"/><rect x="40" y="46" width="20" height="6" fill="%23475569"/><rect x="30" y="52" width="40" height="2" fill="%2364748b"/><path d="M 25,28 L 75,28" stroke="%23ef4444" stroke-width="1" stroke-dasharray="2,4" opacity="0.5"/><polygon points="45,22 60,28 45,34" fill="%23ef4444" opacity="0.8"/></svg>',
+  display: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 60" fill="none"><rect width="100%" height="100%" rx="4" fill="%231e293b"/><rect x="20" y="10" width="60" height="34" rx="2" fill="%230f172a" stroke="%233b82f6" stroke-width="1.5"/><rect x="42" y="44" width="16" height="5" fill="%23475569"/><rect x="34" y="49" width="32" height="2" fill="%2364748b"/></svg>',
+  conferencing: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 60" fill="none"><rect width="100%" height="100%" rx="4" fill="%231e293b"/><circle cx="38" cy="30" r="14" fill="%230f172a" stroke="%2306b6d4" stroke-width="1.5"/><circle cx="38" cy="30" r="5" fill="%2306b6d4"/><path d="M 62,22 L 78,16 L 78,44 L 62,38 Z" fill="%2306b6d4" opacity="0.7"/></svg>',
   audio: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 60" fill="none"><rect width="100%" height="100%" rx="4" fill="%231e293b"/><line x1="15" y1="30" x2="15" y2="30" stroke="%2310b981" stroke-width="3" stroke-linecap="round"/><line x1="25" y1="20" x2="25" y2="40" stroke="%2310b981" stroke-width="3" stroke-linecap="round"/><line x1="35" y1="12" x2="35" y2="48" stroke="%2310b981" stroke-width="3" stroke-linecap="round"/><line x1="45" y1="25" x2="45" y2="35" stroke="%2310b981" stroke-width="3" stroke-linecap="round"/><line x1="55" y1="5" x2="55" y2="55" stroke="%2310b981" stroke-width="3" stroke-linecap="round"/><line x1="65" y1="18" x2="65" y2="42" stroke="%2310b981" stroke-width="3" stroke-linecap="round"/><line x1="75" y1="28" x2="75" y2="32" stroke="%2310b981" stroke-width="3" stroke-linecap="round"/><line x1="85" y1="15" x2="85" y2="45" stroke="%2310b981" stroke-width="3" stroke-linecap="round"/></svg>',
   control: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 60" fill="none"><rect width="100%" height="100%" rx="4" fill="%231e293b"/><rect x="35" y="15" width="30" height="30" rx="4" fill="%230f172a" stroke="%23f59e0b" stroke-width="1.5"/><line x1="25" y1="22" x2="35" y2="22" stroke="%23475569" stroke-width="2"/><line x1="25" y1="30" x2="35" y2="30" stroke="%23475569" stroke-width="2"/><line x1="25" y1="38" x2="35" y2="38" stroke="%23475569" stroke-width="2"/><line x1="65" y1="22" x2="75" y2="22" stroke="%23475569" stroke-width="2"/><line x1="65" y1="30" x2="75" y2="30" stroke="%23475569" stroke-width="2"/><line x1="65" y1="38" x2="75" y2="38" stroke="%23475569" stroke-width="2"/><line x1="42" y1="5" x2="42" y2="15" stroke="%23475569" stroke-width="2"/><line x1="50" y1="5" x2="50" y2="15" stroke="%23475569" stroke-width="2"/><line x1="58" y1="5" x2="58" y2="15" stroke="%23475569" stroke-width="2"/><line x1="42" y1="45" x2="42" y2="55" stroke="%23475569" stroke-width="2"/><line x1="50" y1="45" x2="50" y2="55" stroke="%23475569" stroke-width="2"/><line x1="58" y1="45" x2="58" y2="55" stroke="%23475569" stroke-width="2"/><circle cx="50" cy="30" r="6" fill="%23f59e0b" opacity="0.3"/><circle cx="50" cy="30" r="2" fill="%23f59e0b"/></svg>',
-  network: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 60" fill="none"><rect width="100%" height="100%" rx="4" fill="%231e293b"/><circle cx="50" cy="15" r="5" fill="%238b5cf6"/><circle cx="25" cy="42" r="5" fill="%238b5cf6"/><circle cx="75" cy="42" r="5" fill="%238b5cf6"/><line x1="50" y1="15" x2="25" y2="42" stroke="%238b5cf6" stroke-width="1.5"/><line x1="50" y1="15" x2="75" y2="42" stroke="%238b5cf6" stroke-width="1.5"/><line x1="25" y1="42" x2="75" y2="42" stroke="%238b5cf6" stroke-width="1.5" stroke-dasharray="2,2"/><circle cx="50" cy="30" r="2.5" fill="%23fff" opacity="0.7"/></svg>'
+  network: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 60" fill="none"><rect width="100%" height="100%" rx="4" fill="%231e293b"/><circle cx="50" cy="15" r="5" fill="%238b5cf6"/><circle cx="25" cy="42" r="5" fill="%238b5cf6"/><circle cx="75" cy="42" r="5" fill="%238b5cf6"/><line x1="50" y1="15" x2="25" y2="42" stroke="%238b5cf6" stroke-width="1.5"/><line x1="50" y1="15" x2="75" y2="42" stroke="%238b5cf6" stroke-width="1.5"/><line x1="25" y1="42" x2="75" y2="42" stroke="%238b5cf6" stroke-width="1.5" stroke-dasharray="2,2"/><circle cx="50" cy="30" r="2.5" fill="%23fff" opacity="0.7"/></svg>',
+  broadcast: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 60" fill="none"><rect width="100%" height="100%" rx="4" fill="%231e293b"/><circle cx="50" cy="42" r="4" fill="%23ec4899"/><path d="M 50,42 L 50,20" stroke="%23ec4899" stroke-width="2"/><path d="M 35,30 A 20,20 0 0 1 65,30" stroke="%23ec4899" stroke-width="1.5" fill="none" opacity="0.6"/><path d="M 25,20 A 35,35 0 0 1 75,20" stroke="%23ec4899" stroke-width="1.5" fill="none" opacity="0.35"/></svg>',
+  etc: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 60" fill="none"><rect width="100%" height="100%" rx="4" fill="%231e293b"/><rect x="30" y="18" width="40" height="26" rx="3" fill="%230f172a" stroke="%2364748b" stroke-width="1.5"/><circle cx="50" cy="31" r="5" fill="%2364748b"/></svg>',
 };
 
 export interface Port {
@@ -49,6 +85,10 @@ export interface Equipment extends Record<string, unknown> {
   category: EquipmentCategory;
   name: string;
   model: string;
+  manufacturer?: string;
+  description?: string;
+  /** 모듈형 프레임 제품군 태그 (예: "XDM 시리즈"). EquipmentOption.compatibleSeries와 매칭됨 */
+  series?: string;
   inputs: Port[];
   outputs: Port[];
   bidirectional: Port[];
@@ -61,6 +101,45 @@ export interface LineType {
   name: string;
   color: string;
 }
+
+/** 장비에 장착 가능한 옵션 카드/액세서리. 여러 상위 장비(모델 또는 시리즈)에 동시 호환 가능 */
+export interface EquipmentOption extends Record<string, unknown> {
+  id: string;
+  name: string;
+  model?: string;
+  manufacturer?: string;
+  /** 특정 모델명 지정 (접두 일치로 판정, 예: ["BLU-101"]) */
+  compatibleModels?: string[];
+  /** 제품군 단위 지정 (Equipment.series와 정확히 일치, 예: ["XDM 시리즈"]) */
+  compatibleSeries?: string[];
+  addPorts: {
+    inputs: Port[];
+    outputs: Port[];
+    bidirectional: Port[];
+  };
+}
+
+/** BOM 기성케이블 선택용 카탈로그 항목. 장비 DB(캔버스 노드)와는 분리된 컬렉션 */
+export interface CableCatalogItem extends Record<string, unknown> {
+  id: string;
+  name: string;
+  model: string;
+  manufacturer?: string;
+  lineTypeId?: string;
+  description?: string;
+}
+
+/** 특정 장비에 적용 가능한 옵션 목록 조회 (모델 접두 일치 또는 시리즈 일치) */
+export const getAvailableOptionsForEquipment = (
+  equipment: Pick<Equipment, 'model' | 'series'>,
+  optionsCatalog: EquipmentOption[]
+): EquipmentOption[] => {
+  return optionsCatalog.filter((opt) => {
+    const modelMatch = opt.compatibleModels?.some((m) => equipment.model.startsWith(m));
+    const seriesMatch = !!equipment.series && !!opt.compatibleSeries?.includes(equipment.series);
+    return modelMatch || seriesMatch;
+  });
+};
 
 export interface DiagramPreset {
   id: string;
@@ -295,6 +374,16 @@ interface AppState {
   importEquipmentDB: (db: Equipment[]) => void;
   bulkImportEquipment: (items: Omit<Equipment, 'id'>[], mergeMode: 'append' | 'overwrite') => void;
 
+  equipmentOptions: EquipmentOption[];
+  addEquipmentOption: (opt: Omit<EquipmentOption, 'id'>) => void;
+  updateEquipmentOption: (id: string, opt: Omit<EquipmentOption, 'id'>) => void;
+  removeEquipmentOption: (id: string) => void;
+
+  cableCatalog: CableCatalogItem[];
+  addCableCatalogItem: (item: Omit<CableCatalogItem, 'id'>) => void;
+  updateCableCatalogItem: (id: string, item: Omit<CableCatalogItem, 'id'>) => void;
+  removeCableCatalogItem: (id: string) => void;
+
   nodes: Node[];
   edges: Edge[];
   onNodesChange: OnNodesChange;
@@ -359,6 +448,28 @@ export const useStore = create<AppState>((set, get) => {
 
       return { equipmentDB: updated };
     }),
+
+    equipmentOptions: [],
+    addEquipmentOption: (opt) => set((state) => ({
+      equipmentOptions: [...state.equipmentOptions, { ...opt, id: `eqopt-${Date.now()}` } as EquipmentOption]
+    })),
+    updateEquipmentOption: (id, opt) => set((state) => ({
+      equipmentOptions: state.equipmentOptions.map(o => o.id === id ? { ...o, ...opt } : o)
+    })),
+    removeEquipmentOption: (id) => set((state) => ({
+      equipmentOptions: state.equipmentOptions.filter(o => o.id !== id)
+    })),
+
+    cableCatalog: [],
+    addCableCatalogItem: (item) => set((state) => ({
+      cableCatalog: [...state.cableCatalog, { ...item, id: `cable-${Date.now()}` } as CableCatalogItem]
+    })),
+    updateCableCatalogItem: (id, item) => set((state) => ({
+      cableCatalog: state.cableCatalog.map(c => c.id === id ? { ...c, ...item } : c)
+    })),
+    removeCableCatalogItem: (id) => set((state) => ({
+      cableCatalog: state.cableCatalog.filter(c => c.id !== id)
+    })),
 
     nodes: initialNodes,
     edges: initialEdges,

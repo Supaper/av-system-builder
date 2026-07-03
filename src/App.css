@@ -142,6 +142,21 @@
 .equipment-icon.audio { background: var(--node-audio); }
 .equipment-icon.control { background: var(--node-control); }
 .equipment-icon.network { background: var(--node-network); }
+.equipment-icon.display { background: var(--node-display); }
+.equipment-icon.conferencing { background: var(--node-conferencing); }
+.equipment-icon.broadcast { background: var(--node-broadcast); }
+.equipment-icon.etc { background: var(--node-etc); }
+
+.equipment-subgroup-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  padding: 4px 2px;
+  margin-top: 2px;
+}
 
 .equipment-info {
   display: flex;

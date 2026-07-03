@@ -11,6 +11,10 @@
   --node-audio: #10b981;
   --node-control: #f59e0b;
   --node-network: #8b5cf6;
+  --node-display: #3b82f6;
+  --node-conferencing: #06b6d4;
+  --node-broadcast: #ec4899;
+  --node-etc: #64748b;
 
   /* Unified button size */
   --btn-height: 28px;
