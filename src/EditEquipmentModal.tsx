@@ -1,7 +1,8 @@
-import { useState } from 'react';
-import { useStore, getDefaultPortTypeForCategory } from './store';
-import type { Equipment, EquipmentCategory, Port, PortType } from './store';
-import { Trash2, Plus, Upload } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { useStore, getDefaultPortTypeForCategory, getAvailableOptionsForEquipment } from './store';
+import type { Equipment, EquipmentCategory, EquipmentOption, Port, PortType } from './store';
+import { Trash2, Plus, Upload, Pencil } from 'lucide-react';
+import { EditOptionModal } from './EditOptionModal';
 
 // 장비 라이브러리(카탈로그) 원본 편집 모달 — 팀 공용 장비 DB를 직접 수정한다.
 // 노드 인스턴스를 수정하는 EditNodeModal과 달리 여기서의 변경은 Firestore로
@@ -24,6 +25,10 @@ const PORT_TYPE_OPTIONS = (
 export function EditEquipmentModal({ equipment, onClose }: Props) {
   const updateEquipment = useStore((state) => state.updateEquipment);
   const removeEquipment = useStore((state) => state.removeEquipment);
+  const equipmentOptions = useStore((state) => state.equipmentOptions);
+
+  // 옵션 편집 모달 상태: undefined = 닫힘, null = 신규 생성, EquipmentOption = 편집
+  const [editingOption, setEditingOption] = useState<EquipmentOption | null | undefined>(undefined);
 
   const [name, setName] = useState(equipment.name);
   const [model, setModel] = useState(equipment.model);
@@ -35,6 +40,12 @@ export function EditEquipmentModal({ equipment, onClose }: Props) {
   const [outputs, setOutputs] = useState<Port[]>([...equipment.outputs]);
   const [bidirectional, setBidirectional] = useState<Port[]>([...(equipment.bidirectional || [])]);
   const [imageUrl, setImageUrl] = useState(equipment.imageUrl || '');
+
+  // 현재 폼의 모델명/시리즈 기준으로 호환 옵션 조회 — 편집 중 값이 바뀌면 즉시 갱신됨
+  const compatibleOptions = useMemo(
+    () => getAvailableOptionsForEquipment({ model, series: series.trim() || undefined }, equipmentOptions),
+    [model, series, equipmentOptions]
+  );
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -194,6 +205,50 @@ export function EditEquipmentModal({ equipment, onClose }: Props) {
             <input className="glass-input" value={series} onChange={e => setSeries(e.target.value)} placeholder="비워두면 일반 장비" />
           </div>
 
+          {/* 호환 옵션 카드 — 독립 카탈로그에서 모델/시리즈 매칭으로 조회 */}
+          <div style={{ backgroundColor: 'var(--subtle-bg)', padding: '12px', borderRadius: '8px', border: '1px solid var(--panel-border)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: compatibleOptions.length > 0 ? '8px' : 0 }}>
+              <span style={{ fontSize: '0.875rem', fontWeight: 'bold' }}>
+                호환 옵션 카드 ({compatibleOptions.length})
+              </span>
+              <button
+                type="button"
+                className="glass-button"
+                style={{ padding: '4px 8px', fontSize: '0.75rem', display: 'flex', gap: '4px', alignItems: 'center' }}
+                onClick={() => setEditingOption(null)}
+              >
+                <Plus size={12} /> 새 옵션 추가
+              </button>
+            </div>
+            {compatibleOptions.length === 0 ? (
+              <p style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', margin: '6px 0 0' }}>
+                이 장비(모델명 접두 또는 시리즈 태그)와 호환되는 옵션이 없습니다. 옵션은 노드 편집 화면에서 선택 시 포트를 추가하는 장착형 카드/액세서리입니다.
+              </p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                {compatibleOptions.map(opt => {
+                  const portCount = opt.addPorts.inputs.length + opt.addPorts.outputs.length + opt.addPorts.bidirectional.length;
+                  return (
+                    <div key={opt.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 6px', borderRadius: '4px', fontSize: '0.78rem' }}>
+                      <span style={{ fontWeight: 600, flexShrink: 0 }}>{opt.name}</span>
+                      <span style={{ color: 'var(--text-secondary)', fontSize: '0.7rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                        포트 {portCount}개{portCount === 0 && ' ⚠'}{opt.description ? ` — ${opt.description}` : ''}
+                      </span>
+                      <button
+                        type="button"
+                        className="glass-button"
+                        style={{ padding: '3px 8px', fontSize: '0.7rem', display: 'flex', gap: '4px', alignItems: 'center', flexShrink: 0 }}
+                        onClick={() => setEditingOption(opt)}
+                      >
+                        <Pencil size={11} /> 편집
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
           <div>
             <label style={{ display: 'block', marginBottom: '4px', fontSize: '0.875rem' }}>장비 사진 (선택)</label>
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
@@ -254,6 +309,16 @@ export function EditEquipmentModal({ equipment, onClose }: Props) {
           </div>
         </form>
       </div>
+
+      {editingOption !== undefined && (
+        <EditOptionModal
+          option={editingOption}
+          defaultCompatible={
+            series.trim() ? { series: series.trim() } : { model }
+          }
+          onClose={() => setEditingOption(undefined)}
+        />
+      )}
     </div>
   );
 }

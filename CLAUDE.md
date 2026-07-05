@@ -199,6 +199,7 @@ interface EquipmentOption {
 - **사이드바 계층 시각 구분** — 대분류는 악센트 배경 띠(`.category-title`), 중분류는 들여쓰기+왼쪽 가이드선(`.equipment-subgroup-title`, `.equipment-subgroup-items`)
 - **장비 라이브러리 그룹핑 토글** — 카테고리/제조사 기준 전환 (`groupMode` state, LocalStorage `av-builder-group-mode` 저장). 제조사 섹션은 `manufacturer` 값에서 동적 생성(`librarySections`), 두 모드 모두 동일한 `name` 기준 중분류 적용. ⚠️ `App.tsx`에서 lucide-react의 `Map` 아이콘 import가 전역 `Map` 생성자를 가리므로 새 코드에서 `new Map()` 사용 금지 (Record 사용)
 - **장비 라이브러리 원본 편집** — 사이드바 항목 더블클릭 → `EditEquipmentModal`에서 장비 DB의 모든 필드(이름·모델·제조사·카테고리·설명·시리즈·사진·포트) 수정 및 삭제. `updateEquipment`/`removeEquipment` (store.ts) → `librarySync` 통해 Firestore 실시간 반영. 노드 인스턴스 편집(`EditNodeModal`, 캔버스 노드 더블클릭)과는 별개 — 카탈로그 수정은 배치된 노드에 영향 없음
+- **옵션 카드 카탈로그 관리 UI** — `EditEquipmentModal` 안의 "호환 옵션 카드" 섹션에서 해당 장비와 호환되는 옵션 조회·편집·신규 생성·삭제 (`EditOptionModal`). 신규 생성 시 현재 장비의 시리즈(없으면 모델명)가 호환 조건으로 프리필. 옵션 카탈로그가 시드 스크립트 없이 UI에서 관리 가능해짐
 
 ---
 
