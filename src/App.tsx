@@ -22,6 +22,7 @@ import { AddEquipmentModal } from './AddEquipmentModal';
 import { AddLineTypeModal } from './AddLineTypeModal';
 import { EditLineTypeModal } from './EditLineTypeModal';
 import { EditNodeModal } from './EditNodeModal';
+import { EditEquipmentModal } from './EditEquipmentModal';
 import { CustomSmoothstepEdge } from './CustomSmoothstepEdge';
 import { BulkImportModal } from './BulkImportModal';
 import { AnnotationNode } from './AnnotationNode';
@@ -232,6 +233,7 @@ function FlowBuilder() {
   const [isEqModalOpen, setIsEqModalOpen] = useState(false);
   const [isLineModalOpen, setIsLineModalOpen] = useState(false);
   const [editingNode, setEditingNode] = useState<{id: string, data: Equipment} | null>(null);
+  const [editingEquipment, setEditingEquipment] = useState<Equipment | null>(null);
   const [editingAnnotation, setEditingAnnotation] = useState<{id: string, type: 'annotation' | 'shape', data: any} | null>(null);
   const [editingEdge, setEditingEdge] = useState<{id: string, label: string} | null>(null);
   const [loadingPreset, setLoadingPreset] = useState<DiagramPreset | null>(null);
@@ -626,7 +628,7 @@ function FlowBuilder() {
         <div className="header-title">
           <Settings size={14} color="var(--accent-color)" />
           <span>AV System Builder</span>
-          <span className="version-tag">v1.13</span>
+          <span className="version-tag">v1.14</span>
           <button
             className="glass-button icon-btn"
             onClick={handleNewDiagram}
@@ -1188,6 +1190,8 @@ function FlowBuilder() {
                     className="equipment-item"
                     draggable
                     onDragStart={(e) => onDragStart(e, eq.id)}
+                    onDoubleClick={() => setEditingEquipment(eq)}
+                    title="더블클릭하여 장비 정보 편집"
                   >
                     <div className={`equipment-icon ${eq.category}`} style={{ overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: displayImg ? 0 : undefined }}>
                       {displayImg ? (
@@ -1344,10 +1348,16 @@ function FlowBuilder() {
         />
       )}
       {editingNode && (
-        <EditNodeModal 
-          nodeId={editingNode.id} 
-          initialData={editingNode.data} 
-          onClose={() => setEditingNode(null)} 
+        <EditNodeModal
+          nodeId={editingNode.id}
+          initialData={editingNode.data}
+          onClose={() => setEditingNode(null)}
+        />
+      )}
+      {editingEquipment && (
+        <EditEquipmentModal
+          equipment={editingEquipment}
+          onClose={() => setEditingEquipment(null)}
         />
       )}
       {editingAnnotation && (

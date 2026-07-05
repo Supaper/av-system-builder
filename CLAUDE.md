@@ -198,6 +198,7 @@ interface EquipmentOption {
 - **다크/라이트 모드** — 헤더 해/달 토글, LocalStorage `av-builder-theme` 저장. 테마 색상은 전부 `src/index.css`의 CSS 변수로 관리 (`:root` = 다크 기본, `[data-theme='light']` 오버라이드) — 새 UI 작성 시 하드코딩 색상 대신 반드시 변수 사용 (`--subtle-bg`, `--hover-bg`, `--modal-bg`, `--input-bg`, `--divider` 등)
 - **사이드바 계층 시각 구분** — 대분류는 악센트 배경 띠(`.category-title`), 중분류는 들여쓰기+왼쪽 가이드선(`.equipment-subgroup-title`, `.equipment-subgroup-items`)
 - **장비 라이브러리 그룹핑 토글** — 카테고리/제조사 기준 전환 (`groupMode` state, LocalStorage `av-builder-group-mode` 저장). 제조사 섹션은 `manufacturer` 값에서 동적 생성(`librarySections`), 두 모드 모두 동일한 `name` 기준 중분류 적용. ⚠️ `App.tsx`에서 lucide-react의 `Map` 아이콘 import가 전역 `Map` 생성자를 가리므로 새 코드에서 `new Map()` 사용 금지 (Record 사용)
+- **장비 라이브러리 원본 편집** — 사이드바 항목 더블클릭 → `EditEquipmentModal`에서 장비 DB의 모든 필드(이름·모델·제조사·카테고리·설명·시리즈·사진·포트) 수정 및 삭제. `updateEquipment`/`removeEquipment` (store.ts) → `librarySync` 통해 Firestore 실시간 반영. 노드 인스턴스 편집(`EditNodeModal`, 캔버스 노드 더블클릭)과는 별개 — 카탈로그 수정은 배치된 노드에 영향 없음
 
 ---
 

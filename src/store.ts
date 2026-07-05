@@ -372,6 +372,8 @@ const savePresetsToStorage = (presets: DiagramPreset[]) => {
 interface AppState {
   equipmentDB: Equipment[];
   addEquipment: (eq: Omit<Equipment, 'id'>) => void;
+  updateEquipment: (id: string, eq: Omit<Equipment, 'id'>) => void;
+  removeEquipment: (id: string) => void;
   importEquipmentDB: (db: Equipment[]) => void;
   bulkImportEquipment: (items: Omit<Equipment, 'id'>[], mergeMode: 'append' | 'overwrite') => void;
 
@@ -435,6 +437,12 @@ export const useStore = create<AppState>((set, get) => {
     equipmentDB: initialEqDBSaved,
     addEquipment: (eq) => set((state) => ({
       equipmentDB: [...state.equipmentDB, { ...eq, id: `eq-${Date.now()}` } as Equipment]
+    })),
+    updateEquipment: (id, eq) => set((state) => ({
+      equipmentDB: state.equipmentDB.map(e => e.id === id ? { ...eq, id } as Equipment : e)
+    })),
+    removeEquipment: (id) => set((state) => ({
+      equipmentDB: state.equipmentDB.filter(e => e.id !== id)
     })),
     importEquipmentDB: (db) => set({ equipmentDB: db }),
     bulkImportEquipment: (items, mergeMode) => set((state) => {

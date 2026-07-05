@@ -5,6 +5,17 @@ Format: `## [vX.Y] — YYYY-MM-DD` / Added · Changed · Fixed · Removed
 
 ---
 
+## [v1.14] — 2026-07-06
+
+### Added
+- **장비 라이브러리 원본 편집** — 사이드바 장비 항목 더블클릭 시 편집 모달(`EditEquipmentModal`) 오픈. 제품유형·모델명·제조사·카테고리·설명·시리즈 태그·사진·포트 구성(입력/출력/양방향) 등 장비의 모든 필드를 수정 가능. "라이브러리에서 삭제" 버튼(확인 후 삭제) 포함
+- store에 `updateEquipment`/`removeEquipment` 액션 추가 — 변경은 기존 `librarySync` diff push를 타고 Firestore `equipment` 컬렉션에 실시간 반영되어 전 팀원에게 공유
+
+### 참고
+- 카탈로그 수정은 이미 캔버스에 배치된 노드에 영향을 주지 않음 (노드는 배치 시점 정보를 자기완결적으로 보유) — 배치된 노드는 기존처럼 노드 더블클릭(`EditNodeModal`)으로 개별 수정
+
+---
+
 ## [v1.13] — 2026-07-03
 
 ### Added
