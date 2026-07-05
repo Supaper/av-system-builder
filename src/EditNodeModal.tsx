@@ -17,7 +17,7 @@ export function EditNodeModal({ nodeId, initialData, onClose }: Props) {
   const [model, setModel] = useState(initialData.model);
   const [category, setCategory] = useState<EquipmentCategory>(initialData.category);
 
-  // 옵션이 추가한 포트를 제외한 "기본 포트"만 관리한다 — 옵션 포트는 selectedOptionIds로부터
+  // 옵션이 추가한 포트를 제외한 "기본 포트"만 관리한다 — 옵션 포트는 optionQuantities로부터
   // 매번 다시 계산되므로(아래 selectedOptionPorts), 여기 섞이면 옵션 해제 시 제거가 안 된다.
   const existingOptionPortIds = new Set((initialData.optionPortIds as string[] | undefined) || []);
   const [inputs, setInputs] = useState<Port[]>(initialData.inputs.filter(p => !existingOptionPortIds.has(p.id)));
@@ -25,7 +25,15 @@ export function EditNodeModal({ nodeId, initialData, onClose }: Props) {
   const [bidirectional, setBidirectional] = useState<Port[]>((initialData.bidirectional || []).filter(p => !existingOptionPortIds.has(p.id)));
   const [imageUrl, setImageUrl] = useState(initialData.imageUrl || '');
   const [isReused, setIsReused] = useState(initialData.isReused ?? false);
-  const [selectedOptionIds, setSelectedOptionIds] = useState<string[]>((initialData.selectedOptionIds as string[] | undefined) || []);
+
+  // 옵션별 장착 수량 (같은 카드를 여러 장 꽂는 경우 지원).
+  // 구버전 노드는 selectedOptionIds(체크 배열)만 있으므로 수량 1로 이전한다.
+  const [optionQuantities, setOptionQuantities] = useState<Record<string, number>>(() => {
+    const stored = initialData.selectedOptionQuantities as Record<string, number> | undefined;
+    if (stored) return { ...stored };
+    const legacyIds = (initialData.selectedOptionIds as string[] | undefined) || [];
+    return Object.fromEntries(legacyIds.map(id => [id, 1]));
+  });
 
   const availableOptions = useMemo(
     () => getAvailableOptionsForEquipment({ model, series: initialData.series }, equipmentOptions),
@@ -34,19 +42,34 @@ export function EditNodeModal({ nodeId, initialData, onClose }: Props) {
 
   const selectedOptionPorts = useMemo(() => {
     const result = { inputs: [] as Port[], outputs: [] as Port[], bidirectional: [] as Port[] };
-    selectedOptionIds.forEach(optId => {
+    Object.entries(optionQuantities).forEach(([optId, qty]) => {
+      if (qty <= 0) return;
       const opt = equipmentOptions.find(o => o.id === optId);
       if (!opt) return;
-      const namespace = (p: Port): Port => ({ ...p, id: `opt-${opt.id}-${p.id}` });
-      result.inputs.push(...opt.addPorts.inputs.map(namespace));
-      result.outputs.push(...opt.addPorts.outputs.map(namespace));
-      result.bidirectional.push(...opt.addPorts.bidirectional.map(namespace));
+      for (let i = 0; i < qty; i++) {
+        // 카드가 여러 장이면 포트 라벨에 #n을 붙여 몇 번째 카드인지 구분
+        const namespace = (p: Port): Port => ({
+          ...p,
+          id: `opt-${opt.id}-${i}-${p.id}`,
+          label: qty > 1 ? `${p.label} #${i + 1}` : p.label,
+        });
+        result.inputs.push(...opt.addPorts.inputs.map(namespace));
+        result.outputs.push(...opt.addPorts.outputs.map(namespace));
+        result.bidirectional.push(...opt.addPorts.bidirectional.map(namespace));
+      }
     });
     return result;
-  }, [selectedOptionIds, equipmentOptions]);
+  }, [optionQuantities, equipmentOptions]);
 
-  const toggleOption = (optId: string) => {
-    setSelectedOptionIds(prev => prev.includes(optId) ? prev.filter(id => id !== optId) : [...prev, optId]);
+  const setOptionQty = (optId: string, qty: number) => {
+    const clamped = Math.max(0, Math.min(99, qty));
+    setOptionQuantities(prev => {
+      if (clamped === 0) {
+        const { [optId]: _drop, ...rest } = prev;
+        return rest;
+      }
+      return { ...prev, [optId]: clamped };
+    });
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -75,7 +98,8 @@ export function EditNodeModal({ nodeId, initialData, onClose }: Props) {
       bidirectional: finalBidirectional,
       imageUrl,
       isReused,
-      selectedOptionIds,
+      selectedOptionQuantities: optionQuantities,
+      selectedOptionIds: undefined, // 레거시 필드 제거 (수량 방식으로 대체)
       optionPortIds: [...selectedOptionPorts.inputs, ...selectedOptionPorts.outputs, ...selectedOptionPorts.bidirectional].map(p => p.id),
     });
     onClose();
@@ -185,23 +209,49 @@ export function EditNodeModal({ nodeId, initialData, onClose }: Props) {
           </div>
 
           {availableOptions.length > 0 && (
-            <div style={{ backgroundColor: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '8px', border: '1px solid var(--panel-border)' }}>
-              <span style={{ fontSize: '0.875rem', fontWeight: 'bold', display: 'block', marginBottom: '8px' }}>옵션 (선택 시 포트 구성에 반영)</span>
+            <div style={{ backgroundColor: 'var(--subtle-bg)', padding: '12px', borderRadius: '8px', border: '1px solid var(--panel-border)' }}>
+              <span style={{ fontSize: '0.875rem', fontWeight: 'bold', display: 'block', marginBottom: '8px' }}>옵션 (수량만큼 포트 구성에 반영)</span>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 {availableOptions.map(opt => {
                   const portCount = opt.addPorts.inputs.length + opt.addPorts.outputs.length + opt.addPorts.bidirectional.length;
+                  const qty = optionQuantities[opt.id] || 0;
                   return (
-                    <label key={opt.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem', cursor: 'pointer' }}>
-                      <input
-                        type="checkbox"
-                        checked={selectedOptionIds.includes(opt.id)}
-                        onChange={() => toggleOption(opt.id)}
-                      />
-                      <span style={{ fontWeight: 600 }}>{opt.name}</span>
-                      {opt.model && <span style={{ color: 'var(--text-secondary)' }}>({opt.model})</span>}
-                      <span style={{ color: 'var(--text-secondary)', fontSize: '0.7rem' }}>포트 {portCount}개 추가</span>
-                      {opt.description && <span style={{ color: 'var(--text-secondary)', fontSize: '0.7rem', fontStyle: 'italic' }}>— {opt.description}</span>}
-                    </label>
+                    <div key={opt.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem' }}>
+                      {/* 수량 스테퍼 */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '2px', flexShrink: 0 }}>
+                        <button
+                          type="button"
+                          className="glass-button icon-btn"
+                          style={{ width: 20, height: 20, fontSize: 12, opacity: qty === 0 ? 0.35 : 1 }}
+                          disabled={qty === 0}
+                          onClick={() => setOptionQty(opt.id, qty - 1)}
+                        >−</button>
+                        <input
+                          type="number"
+                          min={0}
+                          max={99}
+                          className="glass-input"
+                          value={qty}
+                          onChange={e => setOptionQty(opt.id, parseInt(e.target.value) || 0)}
+                          style={{
+                            width: 38, height: 20, padding: '0 2px', fontSize: 11, textAlign: 'center',
+                            fontWeight: qty > 0 ? 700 : 400,
+                            color: qty > 0 ? 'var(--accent-color)' : 'var(--text-secondary)',
+                            borderColor: qty > 0 ? 'var(--accent-color)' : 'var(--panel-border)',
+                          }}
+                        />
+                        <button
+                          type="button"
+                          className="glass-button icon-btn"
+                          style={{ width: 20, height: 20, fontSize: 12 }}
+                          onClick={() => setOptionQty(opt.id, qty + 1)}
+                        >+</button>
+                      </div>
+                      <span style={{ fontWeight: 600, color: qty > 0 ? 'var(--text-primary)' : 'var(--text-secondary)' }}>{opt.name}</span>
+                      <span style={{ color: 'var(--text-secondary)', fontSize: '0.7rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        포트 {portCount}개/장{qty > 1 ? ` × ${qty} = ${portCount * qty}개` : ''}{opt.description ? ` — ${opt.description}` : ''}
+                      </span>
+                    </div>
                   );
                 })}
               </div>

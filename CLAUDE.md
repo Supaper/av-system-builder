@@ -126,7 +126,8 @@ interface Equipment {
   imageUrl?: string;
   quantity?: string;    // 예: "x3", "21ea" — 노드 헤더 배지 + LOD 오버레이에 표시
   isReused?: boolean;   // true면 노드 헤더에 "재활용" 황색 배지
-  selectedOptionIds?: string[]; // 노드에 적용된 EquipmentOption id 목록
+  selectedOptionQuantities?: Record<string, number>; // 노드에 장착된 옵션 id → 수량 (같은 카드 여러 장 지원)
+  selectedOptionIds?: string[]; // (레거시) v1.15 이전 체크 방식 — 로드 시 수량 1로 자동 이전, 저장 시 제거됨
   optionPortIds?: string[];     // 옵션이 주입한 포트 id (옵션 해제 시 정확히 제거하기 위한 마커)
   inputs: Port[];
   outputs: Port[];
@@ -157,7 +158,7 @@ interface EquipmentOption {
 ### 장비 옵션 (`EquipmentOption`)
 - `useStore().equipmentOptions`에 독립 카탈로그로 보관 (Firestore `equipmentOptions` 컬렉션과 실시간 동기화)
 - `getAvailableOptionsForEquipment(equipment, catalog)` (`store.ts`)로 특정 장비에 적용 가능한 옵션 조회 — `compatibleModels`는 `equipment.model.startsWith()` 접두 일치, `compatibleSeries`는 `equipment.series`와 정확히 일치
-- `EditNodeModal`에서 체크박스로 다중 선택 → 선택된 옵션들의 `addPorts`가 노드의 실제 inputs/outputs/bidirectional에 병합됨. 병합된 포트 id는 `optionPortIds`에 기록해두고, 옵션 해제 시 정확히 그 id들만 제거 (수동으로 추가한 base 포트는 건드리지 않음)
+- `EditNodeModal`에서 옵션별 **수량 스테퍼**(+/−)로 장착 수 지정 → 수량만큼 `addPorts`가 반복 병합됨 (수량 2 이상이면 포트 라벨에 `#n` 접미사로 카드 구분). 병합된 포트 id는 `optionPortIds`에 기록해두고, 수량 변경/해제 시 정확히 그 id들만 제거 (수동으로 추가한 base 포트는 건드리지 않음)
 
 ---
 

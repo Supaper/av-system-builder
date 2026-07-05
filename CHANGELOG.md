@@ -5,6 +5,13 @@ Format: `## [vX.Y] — YYYY-MM-DD` / Added · Changed · Fixed · Removed
 
 ---
 
+## [v1.16] — 2026-07-06
+
+### Changed
+- **옵션 카드 선택을 체크박스 → 수량 스테퍼로 변경** — 같은 카드를 여러 장 꽂는 경우(예: XDM-12에 HDMI 입력 카드 3장) 지원. 수량만큼 포트가 반복 추가되고, 2장 이상이면 포트 라벨에 `#n` 접미사로 몇 번째 카드인지 구분. 노드 데이터는 `selectedOptionQuantities`(옵션 id → 수량)로 저장하며, 구버전 `selectedOptionIds`(체크 배열) 노드는 로드 시 수량 1로 자동 이전
+
+---
+
 ## [v1.15] — 2026-07-06
 
 ### Added
