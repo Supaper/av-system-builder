@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { useStore, getDefaultPortTypeForCategory, getAvailableOptionsForEquipment } from './store';
+import { useStore, getDefaultPortTypeForCategory, getAvailableOptionsForEquipment, CATEGORY_LABELS } from './store';
 import type { Equipment, EquipmentCategory, EquipmentOption, Port, PortType } from './store';
 import { Trash2, Plus, Upload, Pencil } from 'lucide-react';
 import { EditOptionModal } from './EditOptionModal';
@@ -178,14 +178,9 @@ export function EditEquipmentModal({ equipment, onClose }: Props) {
                 onChange={e => setCategory(e.target.value as EquipmentCategory)}
                 style={{ backgroundColor: 'var(--panel-bg)' }}
               >
-                <option value="video">Video</option>
-                <option value="display">Display</option>
-                <option value="conferencing">Conferencing</option>
-                <option value="audio">Audio</option>
-                <option value="control">Control</option>
-                <option value="network">Network</option>
-                <option value="broadcast">Broadcast</option>
-                <option value="etc">Etc</option>
+                {Object.entries(CATEGORY_LABELS).map(([id, label]) => (
+                  <option key={id} value={id}>{label}</option>
+                ))}
               </select>
             </div>
           </div>

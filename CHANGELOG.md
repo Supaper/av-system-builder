@@ -7,6 +7,11 @@ Format: `## [vX.Y] — YYYY-MM-DD` / Added · Changed · Fixed · Removed
 
 ## [v1.17] — 2026-07-06
 
+### 참고 (데이터 정비)
+- **카탈로그 중복 제거** — `scripts/dedupe-catalog.mjs` 신설. name+model 기준으로 중복 판정, 포트/이미지/제조사가 많은 항목을 유지하고 부족한 필드는 병합 후 사본 삭제. 장비 20개(VS5 3중복 포함)·옵션 1개·케이블 1개 = 총 22개 정리 (장비 785→765)
+- **리팩토링 계획 수립** — src/ 전수 스캔으로 하드코딩·중복 정의 목록화, `REFACTORING_PLAN.md`에 우선순위별 계획 기록 (카테고리 8종 5중복, 포트 행 높이 28/24 이중 정의 등)
+- **리팩토링 우선순위 1 적용** — 카테고리 8종 5중복을 `CATEGORY_LABELS` 단일 소스로 통일 (모달 3곳 select + BulkImport 검증 + App.tsx 초기값·categories 배열), 포트 행 높이를 `PORT_ROW_HEIGHT/GAP/PITCH` 공유 상수로 통일 (store.ts 좌표 계산 ↔ EquipmentNode 렌더 동기화, 핸들 정렬 오차 0px 회귀 확인), `getDefaultPortTypeForCategory`를 Record 매핑으로 교체 (카테고리 추가 시 누락이 컴파일 에러로 검출)
+
 ### Changed
 - **포트 타입을 라인 타입(케이블 타입)과 통일** — 노드/장비/옵션 편집 모달의 포트 타입 선택지가 구버전 4종(Video/Audio/Control/Network) 하드코딩에서 라인 타입 목록(기본 6종: SDI·HDMI·A.AUDIO·LAN·USB·Control) 동적 렌더링으로 변경. 상단 케이블 필터와 항상 일치하며, 라인 타입을 추가하면 포트 타입 선택지에도 자동 반영
 - 포트 핸들 색상도 라인 타입 색상에서 동적 조회 (`EquipmentNode.tsx`의 하드코딩 4색 제거) — SDI 포트는 SDI 색(#374151), USB 포트는 USB 색(#3b82f6)으로 표시

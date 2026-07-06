@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, Upload, FileSpreadsheet, Clipboard, Database, AlertCircle } from 'lucide-react';
+import { CATEGORY_LABELS } from './store';
 import type { EquipmentCategory, Port, PortType } from './store';
 
 export interface RawEquipment {
@@ -192,8 +193,7 @@ export function BulkImportModal({ isOpen, onClose, onImport }: BulkImportModalPr
       if (category.includes('방송') || category.includes('head-end') || category.includes('catv')) category = 'broadcast';
       if (category.includes('기타') || category.includes('etc')) category = 'etc';
 
-      const validCategories = ['video', 'display', 'conferencing', 'audio', 'control', 'network', 'broadcast', 'etc'];
-      const finalCategory = (validCategories.includes(category) ? category : 'video') as EquipmentCategory;
+      const finalCategory = (category in CATEGORY_LABELS ? category : 'video') as EquipmentCategory;
 
       const name = (row[headerMap['name']] || '').trim();
       const model = headerMap['model'] !== undefined ? (row[headerMap['model']] || '').trim() : '';

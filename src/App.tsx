@@ -13,7 +13,7 @@ import type { LucideIcon } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import jsPDF from 'jspdf';
 
-import { useStore, getDefaultEquipmentImage } from './store';
+import { useStore, getDefaultEquipmentImage, CATEGORY_LABELS } from './store';
 import { getLayoutedElements } from './utils/layout';
 import { processEdgesWithOffsets } from './utils/edgeProcessing';
 import type { EquipmentCategory, Equipment } from './store';
@@ -269,10 +269,9 @@ function FlowBuilder() {
   const [showMiniMap, setShowMiniMap] = useState(false);
   const [isDiagramLocked, setIsDiagramLocked] = useState(false);
   
-  const [openCategories, setOpenCategories] = useState<Record<string, boolean>>({
-    video: true, display: true, conferencing: true, audio: true,
-    control: true, network: true, broadcast: true, etc: true
-  });
+  const [openCategories, setOpenCategories] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(Object.keys(CATEGORY_LABELS).map(k => [k, true]))
+  );
   const [openSubGroups, setOpenSubGroups] = useState<Record<string, boolean>>({});
 
   const [presetName, setPresetName] = useState('');
@@ -416,20 +415,21 @@ function FlowBuilder() {
     }
   }, [isBomMode]);
 
-  const categories: { key: EquipmentCategory; label: string; icon: any }[] = [
-    { key: 'video', label: 'Video', icon: Video },
-    { key: 'display', label: 'Display', icon: Monitor },
-    { key: 'conferencing', label: 'Conferencing', icon: Users },
-    { key: 'audio', label: 'Audio', icon: Mic },
-    { key: 'control', label: 'Control', icon: Cpu },
-    { key: 'network', label: 'Network', icon: Network },
-    { key: 'broadcast', label: 'Broadcast', icon: Radio },
-    { key: 'etc', label: 'Etc', icon: MoreHorizontal },
-  ];
+  // 카테고리 정의는 store.ts의 CATEGORY_LABELS가 단일 소스 — 여기서는 아이콘만 매핑.
+  // Record<EquipmentCategory, ...> 타입이라 카테고리를 추가하면 컴파일 에러로 누락이 잡힌다.
+  const categoryIcons: Record<EquipmentCategory, LucideIcon> = {
+    video: Video,
+    display: Monitor,
+    conferencing: Users,
+    audio: Mic,
+    control: Cpu,
+    network: Network,
+    broadcast: Radio,
+    etc: MoreHorizontal,
+  };
 
-  const categoryIcons: Record<string, LucideIcon> = Object.fromEntries(
-    categories.map(c => [c.key, c.icon])
-  );
+  const categories = (Object.entries(CATEGORY_LABELS) as [EquipmentCategory, string][])
+    .map(([key, label]) => ({ key, label, icon: categoryIcons[key] }));
 
   // 사이드바 대분류 섹션 — 카테고리 모드는 고정 8종, 제조사 모드는 데이터에서 동적 생성
   const librarySections: { key: string; label: string; icon: LucideIcon; items: Equipment[] }[] =

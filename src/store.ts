@@ -49,24 +49,32 @@ export const CATEGORY_LABELS: Record<EquipmentCategory, string> = {
   etc: 'Etc',
 };
 
-/** 카테고리별 기본 PortType (신규 장비 생성 시 초기 포트 타입 추정용) */
-export const getDefaultPortTypeForCategory = (category: EquipmentCategory): PortType => {
-  switch (category) {
-    case 'video':
-    case 'display':
-    case 'conferencing':
-    case 'broadcast':
-      return 'video';
-    case 'audio':
-      return 'audio';
-    case 'control':
-      return 'control';
-    case 'network':
-    case 'etc':
-    default:
-      return 'network';
-  }
+/**
+ * 카테고리별 기본 PortType (신규 장비 생성 시 초기 포트 타입 추정용).
+ * Record 타입이라 카테고리를 추가하면 여기서 컴파일 에러로 누락이 잡힌다.
+ */
+const DEFAULT_PORT_TYPE_BY_CATEGORY: Record<EquipmentCategory, PortType> = {
+  video: 'video',
+  display: 'video',
+  conferencing: 'video',
+  broadcast: 'video',
+  audio: 'audio',
+  control: 'control',
+  network: 'network',
+  etc: 'network',
 };
+
+export const getDefaultPortTypeForCategory = (category: EquipmentCategory): PortType =>
+  DEFAULT_PORT_TYPE_BY_CATEGORY[category] || 'network';
+
+/**
+ * 포트 행 레이아웃 상수 — EquipmentNode의 실제 렌더링과 calculateNodeHeight/
+ * getPortYOffset의 좌표 계산이 반드시 같은 값을 봐야 한다. 여기 값을 바꾸면
+ * 노드 높이·엣지 접점이 함께 움직인다 (한쪽만 바꾸면 엣지가 포트에서 어긋남).
+ */
+export const PORT_ROW_HEIGHT = 24; // 포트 행 실제 높이 (EquipmentNode의 height)
+export const PORT_ROW_GAP = 4;     // 행 사이 flex gap
+export const PORT_ROW_PITCH = PORT_ROW_HEIGHT + PORT_ROW_GAP; // 행 반복 간격 (28)
 
 export const defaultCategoryImages: Record<EquipmentCategory, string> = {
   video: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 60" fill="none"><rect width="100%" height="100%" rx="4" fill="%231e293b"/><rect x="15" y="10" width="70" height="36" rx="2" fill="%230f172a" stroke="%23334155" stroke-width="1.5"/><rect x="40" y="46" width="20" height="6" fill="%23475569"/><rect x="30" y="52" width="40" height="2" fill="%2364748b"/><path d="M 25,28 L 75,28" stroke="%23ef4444" stroke-width="1" stroke-dasharray="2,4" opacity="0.5"/><polygon points="45,22 60,28 45,34" fill="%23ef4444" opacity="0.8"/></svg>',
@@ -260,11 +268,11 @@ export const calculateNodeHeight = (eq: {
   
   let portsHeight = 0;
   if (maxIO > 0 && B > 0) {
-    portsHeight = (maxIO * 28 - 4) + 8 + 13 + (B * 28 - 4);
+    portsHeight = (maxIO * PORT_ROW_PITCH - PORT_ROW_GAP) + 8 + 13 + (B * PORT_ROW_PITCH - PORT_ROW_GAP);
   } else if (maxIO > 0) {
-    portsHeight = maxIO * 28 - 4;
+    portsHeight = maxIO * PORT_ROW_PITCH - PORT_ROW_GAP;
   } else if (B > 0) {
-    portsHeight = B * 28 - 4 + 13;
+    portsHeight = B * PORT_ROW_PITCH - PORT_ROW_GAP + 13;
   }
   
   const totalHeight = 24 + 45 + (hasImage ? 68 : 0) + portsHeight + 12;
@@ -293,23 +301,23 @@ export const getPortYOffset = (
   
   const inIndex = eq.inputs ? eq.inputs.findIndex((p: any) => p.id === handleId) : -1;
   if (inIndex !== -1) {
-    return baseOffset + inIndex * 28 + 12;
+    return baseOffset + inIndex * PORT_ROW_PITCH + PORT_ROW_HEIGHT / 2;
   }
-  
+
   const outIndex = eq.outputs ? eq.outputs.findIndex((p: any) => p.id === handleId) : -1;
   if (outIndex !== -1) {
-    return baseOffset + outIndex * 28 + 12;
+    return baseOffset + outIndex * PORT_ROW_PITCH + PORT_ROW_HEIGHT / 2;
   }
-  
+
   const bidiIndex = eq.bidirectional ? eq.bidirectional.findIndex((p: any) => p.id === handleId || `source_${p.id}` === handleId || `target_${p.id}` === handleId) : -1;
   if (bidiIndex !== -1) {
     let offsetBeforeBidi = 0;
     if (maxIO > 0) {
-      offsetBeforeBidi = (maxIO * 28 - 4) + 8 + 13;
+      offsetBeforeBidi = (maxIO * PORT_ROW_PITCH - PORT_ROW_GAP) + 8 + 13;
     } else {
       offsetBeforeBidi = 13;
     }
-    return baseOffset + offsetBeforeBidi + bidiIndex * 28 + 12;
+    return baseOffset + offsetBeforeBidi + bidiIndex * PORT_ROW_PITCH + PORT_ROW_HEIGHT / 2;
   }
   
   return 0;
