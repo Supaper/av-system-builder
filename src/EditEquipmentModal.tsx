@@ -13,19 +13,16 @@ interface Props {
   onClose: () => void;
 }
 
-const PORT_TYPE_OPTIONS = (
-  <>
-    <option value="video">Video</option>
-    <option value="audio">Audio</option>
-    <option value="control">Control</option>
-    <option value="network">Network</option>
-  </>
-);
-
 export function EditEquipmentModal({ equipment, onClose }: Props) {
   const updateEquipment = useStore((state) => state.updateEquipment);
   const removeEquipment = useStore((state) => state.removeEquipment);
   const equipmentOptions = useStore((state) => state.equipmentOptions);
+  const lineTypes = useStore((state) => state.lineTypes);
+
+  // 포트 타입 선택지 = 라인 타입(케이블 타입) 목록. 하드코딩 금지 — 상단 필터와 항상 일치해야 함
+  const portTypeOptions = lineTypes.map(lt => (
+    <option key={lt.id} value={lt.id}>{lt.name}</option>
+  ));
 
   // 옵션 편집 모달 상태: undefined = 닫힘, null = 신규 생성, EquipmentOption = 편집
   const [editingOption, setEditingOption] = useState<EquipmentOption | null | undefined>(undefined);
@@ -129,7 +126,7 @@ export function EditEquipmentModal({ equipment, onClose }: Props) {
               value={port.type}
               onChange={(e) => handlePortChange(kind, idx, { type: e.target.value as PortType })}
             >
-              {PORT_TYPE_OPTIONS}
+              {portTypeOptions}
             </select>
             <button type="button" className="glass-button" style={{ padding: '4px' }} onClick={() => handleRemovePort(kind, idx)}>
               <Trash2 size={12} color="#ef4444" />

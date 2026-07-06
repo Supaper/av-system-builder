@@ -30,7 +30,13 @@ import {
 export type EquipmentCategory =
   | 'video' | 'display' | 'conferencing' | 'audio'
   | 'control' | 'network' | 'broadcast' | 'etc';
-export type PortType = 'video' | 'audio' | 'control' | 'network';
+/**
+ * 포트 타입 = 라인 타입(LineType) id. 포트-포트 연결 유효성 판정과 엣지 색상이
+ * 이 값으로 결정된다. 라인 타입은 사용자가 추가/삭제할 수 있는 동적 목록이므로
+ * 리터럴 유니온이 아니라 string이다. UI의 포트 타입 선택지는 하드코딩하지 말고
+ * 반드시 useStore().lineTypes에서 렌더링할 것.
+ */
+export type PortType = string;
 
 export const CATEGORY_LABELS: Record<EquipmentCategory, string> = {
   video: 'Video',

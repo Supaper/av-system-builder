@@ -628,7 +628,7 @@ function FlowBuilder() {
         <div className="header-title">
           <Settings size={14} color="var(--accent-color)" />
           <span>AV System Builder</span>
-          <span className="version-tag">v1.16</span>
+          <span className="version-tag">v1.17</span>
           <button
             className="glass-button icon-btn"
             onClick={handleNewDiagram}

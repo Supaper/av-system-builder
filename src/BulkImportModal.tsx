@@ -107,7 +107,7 @@ export function BulkImportModal({ isOpen, onClose, onImport }: BulkImportModalPr
           ports.push({
             id: `${direction}-${type}-${portIndex}-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
             label: `${prefix} ${portIndex}`,
-            type: (['video', 'audio', 'control', 'network'].includes(type) ? type : defaultType) as PortType,
+            type: (['sdi', 'video', 'audio', 'control', 'network', 'usb'].includes(type) ? type : defaultType) as PortType,
             direction
           });
           portIndex++;
@@ -121,7 +121,7 @@ export function BulkImportModal({ isOpen, onClose, onImport }: BulkImportModalPr
       const items = str.split(';').map(s => s.trim());
       items.forEach((item, index) => {
         if (!item) return;
-        const match = item.match(/(.+?)\s*\((video|audio|control|network)\)/i);
+        const match = item.match(/(.+?)\s*\((sdi|video|audio|control|network|usb)\)/i);
         let label = item;
         let type = defaultType;
         if (match) {

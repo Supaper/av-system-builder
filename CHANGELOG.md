@@ -5,6 +5,16 @@ Format: `## [vX.Y] — YYYY-MM-DD` / Added · Changed · Fixed · Removed
 
 ---
 
+## [v1.17] — 2026-07-06
+
+### Changed
+- **포트 타입을 라인 타입(케이블 타입)과 통일** — 노드/장비/옵션 편집 모달의 포트 타입 선택지가 구버전 4종(Video/Audio/Control/Network) 하드코딩에서 라인 타입 목록(기본 6종: SDI·HDMI·A.AUDIO·LAN·USB·Control) 동적 렌더링으로 변경. 상단 케이블 필터와 항상 일치하며, 라인 타입을 추가하면 포트 타입 선택지에도 자동 반영
+- 포트 핸들 색상도 라인 타입 색상에서 동적 조회 (`EquipmentNode.tsx`의 하드코딩 4색 제거) — SDI 포트는 SDI 색(#374151), USB 포트는 USB 색(#3b82f6)으로 표시
+- SDI/USB 포트 타입이 생기면서 연결 유효성 판정(같은 타입끼리만 연결)과 엣지 자동 색상도 세분화됨
+- BulkImport 텍스트 파싱의 포트 타입 인식도 6종으로 확장 (`sdi`, `usb` 추가)
+
+---
+
 ## [v1.16] — 2026-07-06
 
 ### Changed
