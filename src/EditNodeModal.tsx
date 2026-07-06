@@ -12,6 +12,12 @@ interface Props {
 export function EditNodeModal({ nodeId, initialData, onClose }: Props) {
   const updateNodeData = useStore((state) => state.updateNodeData);
   const equipmentOptions = useStore((state) => state.equipmentOptions);
+  const lineTypes = useStore((state) => state.lineTypes);
+
+  // 포트 타입 선택지 = 라인 타입(케이블 타입) 목록. 하드코딩 금지 — 상단 필터와 항상 일치해야 함
+  const portTypeOptions = lineTypes.map(lt => (
+    <option key={lt.id} value={lt.id}>{lt.name}</option>
+  ));
 
   const [name, setName] = useState(initialData.name);
   const [model, setModel] = useState(initialData.model);
@@ -359,10 +365,7 @@ export function EditNodeModal({ nodeId, initialData, onClose }: Props) {
                       value={port.type}
                       onChange={(e) => handlePortTypeChange('in', idx, e.target.value as PortType)}
                     >
-                      <option value="video">Video</option>
-                      <option value="audio">Audio</option>
-                      <option value="control">Control</option>
-                      <option value="network">Network</option>
+                      {portTypeOptions}
                     </select>
                     <button type="button" className="glass-button" style={{ padding: '4px' }} onClick={() => handleRemovePort('in', idx)}>
                       <Trash2 size={12} color="#ef4444" />
@@ -401,10 +404,7 @@ export function EditNodeModal({ nodeId, initialData, onClose }: Props) {
                       value={port.type}
                       onChange={(e) => handlePortTypeChange('out', idx, e.target.value as PortType)}
                     >
-                      <option value="video">Video</option>
-                      <option value="audio">Audio</option>
-                      <option value="control">Control</option>
-                      <option value="network">Network</option>
+                      {portTypeOptions}
                     </select>
                     <button type="button" className="glass-button" style={{ padding: '4px' }} onClick={() => handleRemovePort('out', idx)}>
                       <Trash2 size={12} color="#ef4444" />
@@ -443,10 +443,7 @@ export function EditNodeModal({ nodeId, initialData, onClose }: Props) {
                       value={port.type}
                       onChange={(e) => handlePortTypeChange('both', idx, e.target.value as PortType)}
                     >
-                      <option value="control">Control</option>
-                      <option value="network">Network</option>
-                      <option value="video">Video</option>
-                      <option value="audio">Audio</option>
+                      {portTypeOptions}
                     </select>
                     <button type="button" className="glass-button" style={{ padding: '4px' }} onClick={() => handleRemovePort('both', idx)}>
                       <Trash2 size={12} color="#ef4444" />

@@ -2,7 +2,7 @@ import React from 'react';
 import { Handle, Position, useStore as useRFStore } from '@xyflow/react';
 import type { NodeProps, Node } from '@xyflow/react';
 import { Video, Mic, Cpu, Network, Monitor, Users, Radio, MoreHorizontal } from 'lucide-react';
-import { getDefaultEquipmentImage, calculateNodeHeight } from './store';
+import { useStore, getDefaultEquipmentImage, calculateNodeHeight } from './store';
 import type { Equipment, EquipmentCategory } from './store';
 
 type EquipmentNodeData = Equipment & { dimmed?: boolean };
@@ -19,11 +19,14 @@ const categoryColors: Record<EquipmentCategory, string> = {
   etc: 'var(--node-etc)',
 };
 
-const portColors: Record<string, string> = {
+// 라인 타입이 삭제됐거나 아직 동기화 전일 때를 위한 예비 색상 (기본 6종)
+const fallbackPortColors: Record<string, string> = {
+  sdi: '#374151',
   video: '#ef4444',
   audio: '#a855f7',
-  control: '#f59e0b',
   network: '#22c55e',
+  usb: '#3b82f6',
+  control: '#f59e0b',
 };
 
 const iconMap: Record<string, React.ReactElement> = {
@@ -44,6 +47,11 @@ export function EquipmentNode({ data }: NodeProps<EquipmentNodeType>) {
   // React Flow viewport zoom — used for inverse-scaling the LOD overlay text
   const zoom = useRFStore(state => state.transform[2]);
 
+  // 포트 색상은 라인 타입(케이블 타입) 색상과 항상 일치해야 한다 — 동적 조회
+  const lineTypes = useStore(state => state.lineTypes);
+  const portColor = (type: string) =>
+    lineTypes.find(lt => lt.id === type)?.color || fallbackPortColors[type] || '#fff';
+
   const bgColor = categoryColors[data.category] || '#666';
   const displayImageUrl = data.imageUrl || getDefaultEquipmentImage(data.name, data.category);
   const calculatedMinHeight = calculateNodeHeight(data);
@@ -58,7 +66,7 @@ export function EquipmentNode({ data }: NodeProps<EquipmentNodeType>) {
 
   // ── Port renderers (unchanged — always full detail) ────────────────────────
   const inputHandles = data.inputs.map((port) => {
-    const c = portColors[port.type] || '#fff';
+    const c = portColor(port.type);
     return (
       <div key={port.id} style={{ position: 'relative', height: 24, display: 'flex', alignItems: 'center' }}>
         <Handle type="target" position={Position.Left} id={port.id}
@@ -72,7 +80,7 @@ export function EquipmentNode({ data }: NodeProps<EquipmentNodeType>) {
   });
 
   const outputHandles = data.outputs.map((port) => {
-    const c = portColors[port.type] || '#fff';
+    const c = portColor(port.type);
     return (
       <div key={port.id} style={{ position: 'relative', height: 24, display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -86,7 +94,7 @@ export function EquipmentNode({ data }: NodeProps<EquipmentNodeType>) {
   });
 
   const bidiHandles = (data.bidirectional || []).map((port) => {
-    const c = portColors[port.type] || '#fff';
+    const c = portColor(port.type);
     return (
       <div key={port.id} style={{ position: 'relative', height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
         <Handle type="target" position={Position.Left} id={`target_${port.id}`}

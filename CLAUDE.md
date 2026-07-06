@@ -93,7 +93,7 @@ React + TypeScript + Vite 기반의 **AV System Configuration Builder**.
 
 ## 신호 분류 체계 & 컬러
 
-포트 핸들 색상과 엣지 선 색상이 일치해야 한다:
+포트 핸들 색상과 엣지 선 색상이 일치해야 한다. 기본 6종:
 
 | 신호 | ID | 색상 |
 |---|---|---|
@@ -104,7 +104,10 @@ React + TypeScript + Vite 기반의 **AV System Configuration Builder**.
 | USB | `usb` | `#3b82f6` |
 | Control | `control` | `#f59e0b` |
 
-`portColors` 레코드 (`src/EquipmentNode.tsx`)가 위 색상과 반드시 일치해야 한다.
+**v1.17부터 포트 타입 = 라인 타입 id로 통일됨** (`PortType = string`):
+- 포트 핸들 색상은 `EquipmentNode.tsx`의 `portColor()`가 `useStore().lineTypes`에서 **동적 조회** (라인 타입이 삭제된 경우만 `fallbackPortColors` 사용) — 별도 수동 동기화 불필요
+- 모달들의 포트 타입 `<select>` 선택지도 전부 `lineTypes`에서 렌더링 — **하드코딩 금지**. 라인 타입을 추가하면 포트 타입 선택지·색상·연결 유효성 판정에 자동 반영됨
+- 연결 유효성: `portA.type === portB.type` (App.tsx `isValidConnection`) — 타입이 세분화되면서 SDI 포트는 SDI 포트끼리만 연결됨
 
 ---
 

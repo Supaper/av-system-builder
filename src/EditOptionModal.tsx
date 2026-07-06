@@ -15,19 +15,16 @@ interface Props {
   onClose: () => void;
 }
 
-const PORT_TYPE_OPTIONS = (
-  <>
-    <option value="video">Video</option>
-    <option value="audio">Audio</option>
-    <option value="control">Control</option>
-    <option value="network">Network</option>
-  </>
-);
-
 export function EditOptionModal({ option, defaultCompatible, onClose }: Props) {
   const addEquipmentOption = useStore((s) => s.addEquipmentOption);
   const updateEquipmentOption = useStore((s) => s.updateEquipmentOption);
   const removeEquipmentOption = useStore((s) => s.removeEquipmentOption);
+  const lineTypes = useStore((s) => s.lineTypes);
+
+  // 포트 타입 선택지 = 라인 타입(케이블 타입) 목록. 하드코딩 금지 — 상단 필터와 항상 일치해야 함
+  const portTypeOptions = lineTypes.map(lt => (
+    <option key={lt.id} value={lt.id}>{lt.name}</option>
+  ));
 
   const [name, setName] = useState(option?.name || '');
   const [model, setModel] = useState(option?.model || '');
@@ -109,7 +106,7 @@ export function EditOptionModal({ option, defaultCompatible, onClose }: Props) {
               value={port.type}
               onChange={(e) => portSetter(kind)(portList(kind).map((p, i) => i === idx ? { ...p, type: e.target.value as PortType } : p))}
             >
-              {PORT_TYPE_OPTIONS}
+              {portTypeOptions}
             </select>
             <button type="button" className="glass-button" style={{ padding: '4px' }} onClick={() => portSetter(kind)(portList(kind).filter((_, i) => i !== idx))}>
               <Trash2 size={12} color="#ef4444" />
