@@ -2,7 +2,7 @@ import React from 'react';
 import { Handle, Position, useStore as useRFStore } from '@xyflow/react';
 import type { NodeProps, Node } from '@xyflow/react';
 import { Video, Mic, Cpu, Network, Monitor, Users, Radio, MoreHorizontal } from 'lucide-react';
-import { useStore, getDefaultEquipmentImage, calculateNodeHeight } from './store';
+import { useStore, getDefaultEquipmentImage, calculateNodeHeight, PORT_ROW_HEIGHT, PORT_ROW_GAP } from './store';
 import type { Equipment, EquipmentCategory } from './store';
 
 type EquipmentNodeData = Equipment & { dimmed?: boolean };
@@ -68,7 +68,7 @@ export function EquipmentNode({ data }: NodeProps<EquipmentNodeType>) {
   const inputHandles = data.inputs.map((port) => {
     const c = portColor(port.type);
     return (
-      <div key={port.id} style={{ position: 'relative', height: 24, display: 'flex', alignItems: 'center' }}>
+      <div key={port.id} style={{ position: 'relative', height: PORT_ROW_HEIGHT, display: 'flex', alignItems: 'center' }}>
         <Handle type="target" position={Position.Left} id={port.id}
           style={{ background: c, width: 8, height: 8, left: -16, border: '1.5px solid var(--handle-border)' }} />
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -82,7 +82,7 @@ export function EquipmentNode({ data }: NodeProps<EquipmentNodeType>) {
   const outputHandles = data.outputs.map((port) => {
     const c = portColor(port.type);
     return (
-      <div key={port.id} style={{ position: 'relative', height: 24, display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+      <div key={port.id} style={{ position: 'relative', height: PORT_ROW_HEIGHT, display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           <span style={{ fontSize: 10, color: 'var(--text-secondary)' }}>{port.label}</span>
           <div style={{ width: 5, height: 5, borderRadius: '50%', background: c }} />
@@ -96,7 +96,7 @@ export function EquipmentNode({ data }: NodeProps<EquipmentNodeType>) {
   const bidiHandles = (data.bidirectional || []).map((port) => {
     const c = portColor(port.type);
     return (
-      <div key={port.id} style={{ position: 'relative', height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
+      <div key={port.id} style={{ position: 'relative', height: PORT_ROW_HEIGHT, display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
         <Handle type="target" position={Position.Left} id={`target_${port.id}`}
           style={{ background: c, width: 8, height: 8, left: -16, border: '1.5px solid var(--handle-border)' }} />
         <span style={{
@@ -225,17 +225,17 @@ export function EquipmentNode({ data }: NodeProps<EquipmentNodeType>) {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flex: 1 }}>
         {(data.inputs.length > 0 || data.outputs.length > 0) && (
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: PORT_ROW_GAP, flex: 1 }}>
               {inputHandles}
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1, alignItems: 'flex-end' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: PORT_ROW_GAP, flex: 1, alignItems: 'flex-end' }}>
               {outputHandles}
             </div>
           </div>
         )}
         {(data.bidirectional || []).length > 0 && (
           <div style={{
-            display: 'flex', flexDirection: 'column', gap: 4,
+            display: 'flex', flexDirection: 'column', gap: PORT_ROW_GAP,
             borderTop: (data.inputs.length > 0 || data.outputs.length > 0) ? '1px dashed var(--panel-border)' : 'none',
             paddingTop: (data.inputs.length > 0 || data.outputs.length > 0) ? 8 : 0,
           }}>

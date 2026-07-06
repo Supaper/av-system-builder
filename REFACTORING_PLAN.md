@@ -8,11 +8,11 @@
 
 ### 1-1. 카테고리 8종 목록이 5곳에 하드코딩
 `video/display/conferencing/audio/control/network/broadcast/etc` 목록이 산재:
-- [ ] `AddEquipmentModal.tsx` — `<option>` 8종 하드코딩
-- [ ] `EditEquipmentModal.tsx` — 동일 복제
-- [ ] `EditNodeModal.tsx` — 동일 복제
-- [ ] `BulkImportModal.tsx` — `validCategories` 배열 + 한글 매핑 별도 존재
-- [ ] `App.tsx` — `openCategories` 초기값 8종 객체
+- [x] `AddEquipmentModal.tsx` — CATEGORY_LABELS map으로 교체 (2026-07-06)
+- [x] `EditEquipmentModal.tsx` — 동일 (2026-07-06)
+- [x] `EditNodeModal.tsx` — 동일 (2026-07-06)
+- [x] `BulkImportModal.tsx` — `category in CATEGORY_LABELS` 검증으로 교체 (2026-07-06, 한글→카테고리 매핑 로직은 유지)
+- [x] `App.tsx` — openCategories 초기값·categories 배열 모두 CATEGORY_LABELS에서 파생, 아이콘은 Record<EquipmentCategory, LucideIcon>으로 명시 (2026-07-06)
 
 **수정안:** `store.ts`에 이미 있는 `CATEGORY_LABELS`를 단일 소스로 사용.
 `Object.entries(CATEGORY_LABELS).map(([id, label]) => <option .../>)` 패턴으로 통일.
@@ -27,10 +27,12 @@
 규칙 위반이 조용히 발생한다.
 **수정안:** `store.ts`에 `PORT_ROW_HEIGHT = 24`, `PORT_ROW_GAP = 4` (합 28) 상수를 export하고
 양쪽 모두 이 상수만 참조. 수정 후 포트 많은 노드에서 엣지 접점 회귀 확인 필수.
+✅ **완료 (2026-07-06)** — PORT_ROW_HEIGHT/GAP/PITCH 상수 도입, store.ts 계산식과 EquipmentNode 렌더 모두 교체. 핸들-행 정렬 오차 0.0px 회귀 확인.
 
 ### 1-3. `getDefaultPortTypeForCategory`의 switch에 `etc` 누락
 7종만 명시하고 `etc`는 default로 흡수 — 카테고리 추가 시 누락 위험.
 **수정안:** `Record<EquipmentCategory, PortType>` 매핑 테이블로 교체 (누락 시 타입 에러 발생).
+✅ **완료 (2026-07-06)** — DEFAULT_PORT_TYPE_BY_CATEGORY Record로 교체.
 
 ## 우선순위 2 — 문자열/버전 상수화
 
