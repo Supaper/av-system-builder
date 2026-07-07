@@ -1,7 +1,5 @@
 import type { Node, Edge } from '@xyflow/react';
 import { calculateNodeHeight, getPortYOffset } from '../store';
-import { getEdgePoints, computeJumps } from './edgeGeometry';
-import type { XY } from './edgeGeometry';
 
 interface EdgeEndpoints {
   sourceX: number;
@@ -82,6 +80,10 @@ export function processEdgesWithOffsets(edges: Edge[], nodes: Node[]): Edge[] {
   const nodeMap: Record<string, Node> = {};
   nodes.forEach(n => { nodeMap[n.id] = n; });
 
+  // 좌표는 스토어 노드 위치 + 교정된 상수(NODE_HEADER_HEIGHT 등) 기반 근사치.
+  // RF internals를 여기서 읽으면 한 프레임 지난 좌표(레이아웃 직후 stale)를
+  // 읽을 수 있어 오프셋 판단이 고착된다 — 픽셀 정밀도가 필요한 점프 계산은
+  // 렌더 시점(CustomSmoothstepEdge)에서 수행한다.
   const infoMap = new Map<string, EdgeEndpoints | null>();
   edges.forEach(e => infoMap.set(e.id, getEdgeEndpoints(e, nodeMap)));
 
@@ -234,6 +236,58 @@ export function processEdgesWithOffsets(edges: Edge[], nodes: Node[]): Edge[] {
     });
   }
 
+  // ── Stage 4: 전역 세로 통로 충돌 해소 ─────────────────────────────────────
+  // Stage 0~3은 "같은 그룹 안"의 오프셋만 조정한다. 서로 다른 그룹(다른 타겟/
+  // 소스)의 세로 구간이 우연히 같은 X에 놓이면 선이 완전히 포개져 구분이
+  // 불가능해진다 → 스윕으로 겹치는 세로선을 옆으로 밀어낸다.
+  const MIN_V_GAP = 14;
+  interface VSeg { id: string; splitX: number; yMin: number; yMax: number; minX: number; maxX: number }
+  const vsegs: VSeg[] = [];
+  edges.forEach(e => {
+    const info = infoMap.get(e.id);
+    if (!info || !info.isHorizontal) return;
+    if (info.targetX < info.sourceX - 20) return;              // 백엣지는 별도 U자 경로
+    if (Math.abs(info.sourceY - info.targetY) < 8) return;     // 직선 렌더링 — 세로 구간 없음
+    const mid = (info.sourceX + info.targetX) / 2;
+    const splitX = mid + (edgeOffsets[e.id] ?? 0);
+    vsegs.push({
+      id: e.id,
+      splitX,
+      yMin: Math.min(info.sourceY, info.targetY),
+      yMax: Math.max(info.sourceY, info.targetY),
+      minX: Math.min(info.sourceX, info.targetX) + 20,
+      // 세로선이 중간 열의 노드 영역을 관통하지 않도록 출발 열 근처 통로로 제한
+      maxX: Math.min(Math.max(info.sourceX, info.targetX) - 20, info.sourceX + 200),
+    });
+  });
+
+  vsegs.sort((a, b) => a.splitX - b.splitX);
+  const placed: VSeg[] = [];
+  vsegs.forEach(seg => {
+    // 통로 클램프를 "먼저" 적용한 뒤 충돌을 밀어낸다 — 순서를 바꾸면
+    // 클램프가 이미 해소된 충돌을 같은 X로 다시 모아버린다.
+    let x = Math.max(seg.minX, Math.min(seg.maxX, seg.splitX));
+    // 이미 배치된 세로선들과 Y가 겹치면 최소 간격을 확보할 때까지 오른쪽으로 이동
+    // (겹침이 통로 이탈보다 나쁘므로 이 단계에서는 maxX를 넘는 것을 허용)
+    let moved = true;
+    let guard = 0;
+    while (moved && guard++ < 32) {
+      moved = false;
+      for (const p of placed) {
+        const yOverlap = Math.min(seg.yMax, p.yMax) - Math.max(seg.yMin, p.yMin);
+        if (yOverlap > 4 && Math.abs(x - p.splitX) < MIN_V_GAP) {
+          x = p.splitX + MIN_V_GAP;
+          moved = true;
+        }
+      }
+    }
+    if (x !== seg.splitX) {
+      const info = infoMap.get(seg.id)!;
+      edgeOffsets[seg.id] = x - (info.sourceX + info.targetX) / 2;
+    }
+    placed.push({ ...seg, splitX: x });
+  });
+
   return edges.map(edge => ({
     ...edge,
     type: 'customSmoothstep',
@@ -242,70 +296,4 @@ export function processEdgesWithOffsets(edges: Edge[], nodes: Node[]): Edge[] {
       splitOffset: edgeOffsets[edge.id] ?? 0,
     },
   }));
-}
-
-/**
- * React Flow 내부 실측값(internals.handleBounds)으로 엣지 양끝 좌표를 구한다.
- * getPortYOffset 기반 근사치는 헤더 실제 높이와 어긋날 수 있어(텍스트 줄바꿈 등)
- * 점프처럼 픽셀 정밀도가 필요한 계산에는 반드시 이 실측 좌표를 쓴다 —
- * CustomSmoothstepEdge가 렌더링에 받는 좌표와 동일한 소스다.
- */
-function getEdgeEndpointsFromInternals(
-  edge: Edge,
-  getInternalNode: (id: string) => any
-): { sourceX: number; sourceY: number; targetX: number; targetY: number; isHorizontal: boolean } | null {
-  const sn = getInternalNode(edge.source);
-  const tn = getInternalNode(edge.target);
-  if (!sn?.internals?.handleBounds || !tn?.internals?.handleBounds) return null;
-
-  const sBounds = sn.internals.handleBounds.source || [];
-  const tBounds = tn.internals.handleBounds.target || [];
-  const sb = (edge.sourceHandle ? sBounds.find((h: any) => h.id === edge.sourceHandle) : null) ?? sBounds[0];
-  const tb = (edge.targetHandle ? tBounds.find((h: any) => h.id === edge.targetHandle) : null) ?? tBounds[0];
-  if (!sb || !tb) return null;
-
-  return {
-    sourceX: sn.internals.positionAbsolute.x + sb.x + sb.width / 2,
-    sourceY: sn.internals.positionAbsolute.y + sb.y + sb.height / 2,
-    targetX: tn.internals.positionAbsolute.x + tb.x + tb.width / 2,
-    targetY: tn.internals.positionAbsolute.y + tb.y + tb.height / 2,
-    isHorizontal: ((tn as any).targetPosition ?? 'left') !== 'top',
-  };
-}
-
-/**
- * 화면에 보이는 엣지들끼리의 H×V 교차 지점을 계산해 각 엣지 data.jumps에 부착.
- * 수평 세그먼트를 가진 쪽이 교차점에서 반원 아치로 "점프"한다.
- *
- * processEdgesWithOffsets 이후(오프셋 확정 후), 라인 타입 필터링 이후의
- * "실제로 보이는" 엣지 목록에 적용해야 한다 — 숨긴 선 위를 점프하면 어색하다.
- * getInternalNode는 useReactFlow()의 것 — 실측 핸들 좌표용 (마운트 전이면
- * handleBounds가 없어 해당 엣지는 건너뛰고, 측정 완료 후 재계산된다).
- */
-export function attachEdgeJumps(
-  edges: Edge[],
-  getInternalNode: (id: string) => any
-): Edge[] {
-  if (edges.length < 2) return edges;
-
-  const polylines = new Map<string, XY[]>();
-  edges.forEach(e => {
-    const info = getEdgeEndpointsFromInternals(e, getInternalNode);
-    if (!info) return;
-    const splitOffset = ((e as any).data?.splitOffset as number) ?? 0;
-    polylines.set(e.id, getEdgePoints({ ...info, splitOffset }));
-  });
-
-  return edges.map(edge => {
-    const points = polylines.get(edge.id);
-    if (!points) return edge;
-    const others: XY[][] = [];
-    polylines.forEach((poly, id) => { if (id !== edge.id) others.push(poly); });
-    const jumps = computeJumps(points, others);
-    if (jumps.length === 0 && !(edge as any).data?.jumps) return edge;
-    return {
-      ...edge,
-      data: { ...((edge as any).data || {}), jumps },
-    };
-  });
 }

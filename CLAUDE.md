@@ -62,9 +62,12 @@ React + TypeScript + Vite 기반의 **AV System Configuration Builder**.
 - 오토 레이아웃 시 노드 겹침 방지를 위해 Dagre에 이 값을 주입해야 함
 
 ### 엣지 지오메트리 & 교차 점프 (`src/utils/edgeGeometry.ts`)
-- 엣지 경로 지점 계산(`getEdgePoints`)은 렌더러(`CustomSmoothstepEdge`)와 교차 계산(`edgeProcessing.attachEdgeJumps`)이 **반드시 공유** — 한쪽만 수정하면 점프가 실제 교차점에서 어긋남
-- 교차 점프: 보이는 엣지끼리 H×V 세그먼트 교차 지점에서 수평선이 반원 아치로 점프. 좌표는 `getInternalNode()`의 실측 핸들 좌표 사용 (getPortYOffset 근사치는 헤더 실제 높이와 ~10px 오차가 있어 점프에는 사용 금지)
+- 엣지 경로 지점 계산(`getEdgePoints`)은 렌더러와 교차 계산이 **반드시 공유** — 한쪽만 수정하면 점프가 실제 교차점에서 어긋남
+- **교차 점프는 `CustomSmoothstepEdge` 렌더 시점에 계산** — RF 스토어(`useRFStore`의 `edges`+`nodeLookup`)에서 다른 엣지들의 실측 지오메트리를 읽어 H×V 교차점에 반원 아치를 그림. ⚠️ App 레벨 memo에서 `getInternalNode()`를 읽으면 안 됨: 레이아웃 직후 RF 내부 반영 전의 **한 프레임 지난 좌표**를 읽고 고착됨 (실제로 겪은 버그)
+- 오프셋 배정(`processEdgesWithOffsets`)은 스토어 좌표 + 교정 상수 기반 — Stage 0~3(그룹별 오프셋) 후 **Stage 4에서 전역 세로 통로 스윕**: 서로 다른 그룹의 세로선이 같은 X에 겹치면 밀어내고, 다열을 건너는 엣지의 세로선은 출발 열 근처(sourceX+200 이내)로 클램프해 중간 열 관통 방지. 클램프를 밀어내기보다 먼저 적용할 것 (순서 바꾸면 충돌 재발생)
+- `NODE_HEADER_HEIGHT = 54` (store.ts) — 헤더 실측 높이. 노드 헤더 렌더링(폰트/패딩)을 바꾸면 이 상수도 함께 갱신해야 좌표 근사가 유지됨
 - Firestore 쓰기는 `librarySync.ts`의 `sanitizeForFirestore`를 반드시 경유 — 편집 모달들이 빈 입력을 `undefined`로 저장하는데 Firestore가 undefined를 거부함 (v1.18에서 고친 "동기화 오류" 버그의 원인)
+- 교차/겹침 검증: `scratchpad`의 Playwright 테스트가 렌더링된 SVG path를 파싱해 모든 H×V 교차의 점프 유무·세로선 겹침을 전수 검사하는 패턴 사용 (점프 아치를 건너 수평 런을 병합해야 정확)
 
 ### 평행 엣지 처리 (`src/utils/edgeProcessing.ts`)
 3단계 알고리즘으로 선 교차를 최소화:

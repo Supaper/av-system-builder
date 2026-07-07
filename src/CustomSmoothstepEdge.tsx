@@ -1,7 +1,8 @@
-import { BaseEdge, EdgeLabelRenderer } from '@xyflow/react';
+import { BaseEdge, EdgeLabelRenderer, useStore as useRFStore } from '@xyflow/react';
 import type { EdgeProps } from '@xyflow/react';
+import { useMemo } from 'react';
 import type { BomRowData } from './BomBulkModal';
-import { getEdgePoints, buildOrthogonalPath } from './utils/edgeGeometry';
+import { getEdgePoints, buildOrthogonalPath, computeJumps, getEdgeEndpointsFromLookup } from './utils/edgeGeometry';
 import type { XY } from './utils/edgeGeometry';
 
 function buildBomLabel(bomRows: BomRowData[]): string {
@@ -37,20 +38,36 @@ export function CustomSmoothstepEdge({
   markerEnd,
   data,
 }: EdgeProps) {
-  const edgeData = data as { splitOffset?: number; label?: string; isBomMode?: boolean; bomRows?: BomRowData[]; jumps?: XY[] } | undefined;
+  const edgeData = data as { splitOffset?: number; label?: string; isBomMode?: boolean; bomRows?: BomRowData[] } | undefined;
   const splitOffset = edgeData?.splitOffset ?? 0;
   const label = edgeData?.label ?? '';
   const isBomMode = edgeData?.isBomMode ?? false;
   const bomRows: BomRowData[] = edgeData?.bomRows ?? [];
-  const jumps: XY[] = edgeData?.jumps ?? [];
   const isHorizontal = sourcePosition === 'left' || sourcePosition === 'right';
 
   const bomLabel = isBomMode ? buildBomLabel(bomRows) : '';
   const bomLabelMissing = isBomMode && bomLabel === '⚠ 미입력';
 
-  // 경로 지점 계산은 edgeGeometry로 일원화 — 교차 점프(hop) 계산과 반드시
-  // 같은 지오메트리를 봐야 하기 때문 (edgeProcessing.attachEdgeJumps 참고)
+  // 다른 엣지들의 지오메트리 (교차 점프 계산용) — 렌더 시점의 RF 스토어에서
+  // 직접 읽어 이 엣지가 props로 받은 좌표와 같은 프레임을 보장한다.
+  const otherEdges = useRFStore(s => s.edges);
+  const nodeLookup = useRFStore(s => s.nodeLookup);
+
+  // 경로 지점 계산은 edgeGeometry로 일원화 (교차 계산과 동일 지오메트리)
   const points = getEdgePoints({ sourceX, sourceY, targetX, targetY, isHorizontal, splitOffset });
+
+  const jumps: XY[] = useMemo(() => {
+    const others: XY[][] = [];
+    for (const e of otherEdges) {
+      if (e.id === id || e.hidden) continue;
+      const g = getEdgeEndpointsFromLookup(e, nodeLookup as Map<string, unknown>);
+      if (!g) continue;
+      others.push(getEdgePoints({ ...g, splitOffset: (e.data as any)?.splitOffset ?? 0 }));
+    }
+    return computeJumps(points, others);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [otherEdges, nodeLookup, id, sourceX, sourceY, targetX, targetY, splitOffset]);
+
   const path = buildOrthogonalPath(points, jumps);
 
   // Midpoint for label placement (approximate center of the routing path)

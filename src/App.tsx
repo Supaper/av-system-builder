@@ -15,7 +15,7 @@ import jsPDF from 'jspdf';
 
 import { useStore, getDefaultEquipmentImage, CATEGORY_LABELS } from './store';
 import { getLayoutedElements } from './utils/layout';
-import { processEdgesWithOffsets, attachEdgeJumps } from './utils/edgeProcessing';
+import { processEdgesWithOffsets } from './utils/edgeProcessing';
 import type { EquipmentCategory, Equipment } from './store';
 import { EquipmentNode } from './EquipmentNode';
 import { AddEquipmentModal } from './AddEquipmentModal';
@@ -86,7 +86,7 @@ function FlowBuilder() {
     );
   }, [equipmentDB, equipmentSearch]);
 
-  const { screenToFlowPosition, fitView, zoomIn, zoomOut, getInternalNode } = useReactFlow();
+  const { screenToFlowPosition, fitView, zoomIn, zoomOut } = useReactFlow();
 
   const processedEdges = useMemo(
     () => processEdgesWithOffsets(edges, nodes),
@@ -94,7 +94,7 @@ function FlowBuilder() {
   );
 
   const visibleEdges = useMemo(() => {
-    const filtered = processedEdges.filter(edge => {
+    return processedEdges.filter(edge => {
       const strokeColor = edge.style?.stroke;
       let lineTypeId = (edge as any).data?.lineTypeId;
       if (!lineTypeId && strokeColor) {
@@ -106,11 +106,7 @@ function FlowBuilder() {
       if (!lineTypeId) return true;
       return !hiddenLineTypeIds.includes(lineTypeId);
     });
-    // 보이는 선끼리의 교차 지점에 점프(hop) 부착 — 필터링 후에 계산해야
-    // 숨겨진 선 위를 점프하는 어색함이 없다. 좌표는 RF 실측값(getInternalNode) 사용.
-    return attachEdgeJumps(filtered, getInternalNode);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [processedEdges, hiddenLineTypeIds, lineTypes, nodes]);
+  }, [processedEdges, hiddenLineTypeIds, lineTypes]);
 
   const [isBomMode, setIsBomMode] = useState(false);
   const [isBomBulkModalOpen, setIsBomBulkModalOpen] = useState(false);
