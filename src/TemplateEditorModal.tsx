@@ -1,7 +1,7 @@
 // ───────────────────────────────────────────────────────────────────────────
 // 빠른제작 템플릿 편집기 — 슬롯(장비 자리)과 연결 정의를 폼으로 작성/수정한다.
 // 저장하면 useStore.quickTemplates에 반영 → librarySync가 Firestore
-// quickTemplates 컬렉션으로 실시간 push (기본 제공 템플릿은 사본으로 저장됨).
+// quickTemplates 컬렉션으로 실시간 push.
 // ───────────────────────────────────────────────────────────────────────────
 import { useMemo, useState } from 'react';
 import { Plus, Trash2, AlertTriangle, ArrowRight, Save } from 'lucide-react';
@@ -9,7 +9,7 @@ import { useStore, CATEGORY_LABELS, getCandidatesForSlot } from './store';
 import type { EquipmentCategory, QuickBuildTemplate, TemplateSlot, TemplateConnection } from './store';
 
 interface Props {
-  /** null = 새 템플릿, isBuiltIn 템플릿이면 저장 시 사본 생성 */
+  /** null = 새 템플릿 */
   template: QuickBuildTemplate | null;
   onClose: () => void;
   /** 저장 후 상위(위저드)가 목록을 갱신하거나 해당 템플릿을 선택할 수 있게 알림 */
@@ -25,9 +25,7 @@ export function TemplateEditorModal({ template, onClose, onSaved }: Props) {
   const addQuickTemplate = useStore(s => s.addQuickTemplate);
   const updateQuickTemplate = useStore(s => s.updateQuickTemplate);
 
-  const isCopyOfBuiltIn = !!template?.isBuiltIn;
-
-  const [name, setName] = useState(template ? (isCopyOfBuiltIn ? `${template.name} (사본)` : template.name) : '');
+  const [name, setName] = useState(template?.name ?? '');
   const [description, setDescription] = useState(template?.description ?? '');
   const [slots, setSlots] = useState<TemplateSlot[]>(
     template ? template.slots.map(s => ({ ...s })) : []
@@ -86,15 +84,13 @@ export function TemplateEditorModal({ template, onClose, onSaved }: Props) {
     const body = {
       name: name.trim(),
       description: description.trim() || undefined,
-      isBuiltIn: false,
       slots,
       connections,
     };
-    if (template && !isCopyOfBuiltIn) {
+    if (template) {
       updateQuickTemplate(template.id, body);
       onSaved?.({ ...template, ...body });
     } else {
-      // 신규 또는 기본 제공 템플릿의 사본
       addQuickTemplate(body);
       const saved = useStore.getState().quickTemplates.at(-1);
       if (saved) onSaved?.(saved);
@@ -112,13 +108,8 @@ export function TemplateEditorModal({ template, onClose, onSaved }: Props) {
         onClick={e => e.stopPropagation()}
       >
         <h3 style={{ fontSize: '0.9rem', fontWeight: 700, margin: 0 }}>
-          {template ? (isCopyOfBuiltIn ? '템플릿 사본 만들기' : '템플릿 편집') : '새 템플릿 만들기'}
+          {template ? '템플릿 편집' : '새 템플릿 만들기'}
         </h3>
-        {isCopyOfBuiltIn && (
-          <p style={{ fontSize: 10.5, color: 'var(--text-secondary)', margin: 0 }}>
-            기본 제공 템플릿은 직접 수정할 수 없어 사본(내 템플릿)으로 저장됩니다.
-          </p>
-        )}
 
         <div style={{ display: 'flex', gap: 8 }}>
           <input className="glass-input" style={{ flex: 1, fontSize: 12 }} placeholder="템플릿 이름 (예: 중형 회의실)"
@@ -235,7 +226,7 @@ export function TemplateEditorModal({ template, onClose, onSaved }: Props) {
           <div style={{ display: 'flex', gap: 8 }}>
             <button className="glass-button" style={{ fontSize: 11 }} onClick={onClose}>취소</button>
             <button className="glass-button primary" style={{ fontSize: 11 }} disabled={!!validationError} onClick={handleSave}>
-              <Save size={12} /> {isCopyOfBuiltIn ? '사본으로 저장' : '저장'}
+              <Save size={12} /> 저장
             </button>
           </div>
         </div>

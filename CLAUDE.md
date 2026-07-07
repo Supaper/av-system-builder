@@ -220,9 +220,9 @@ interface EquipmentOption {
 - **상단바 Share 통합 메뉴** — Import/Export/공유 링크를 단일 `Share` 드롭다운으로 통합 (`isShareMenuOpen`). 섹션: 클라우드 공유 링크 / 가져오기 3종 / 내보내기 4종(PDF 포함)
 - **반응형 헤더** — `.app-header` flex-wrap 기반. 좁은 화면에서 중앙 툴바가 둘째 줄로 내려감 (1560px 미디어쿼리로 넓은 화면은 한 줄 유지). 어떤 해상도에서도 버튼 잘림 없음
 - **깊은 줌아웃 + 라벨 역스케일** — `minZoom={0.05}`. LOD 오버레이 캡 44/26px, 엣지 라벨 `labelScale = min(3.2, max(1, 0.85/zoom))` (`CustomSmoothstepEdge.tsx`)
-- **노드/엣지 선택 시각 표시** — 케이블 팔레트와 충돌하지 않도록 **무채색**(`--text-primary`: 다크=흰색/라이트=검정) 사용. 선택 노드는 점선 아웃라인+글로우, 선택 엣지는 선 색 유지 + 4px + 무채색 할로, 엣지 호버 3px (App.css — ⚠️ 호버 규칙을 selected 규칙보다 먼저 선언해야 selected가 이김. 악센트 파랑은 HDMI/USB, 회색은 SDI 색과 겹치므로 선택 표시에 쓰지 말 것)
-- **빠른제작 (Quick Build)** — 슬롯 기반 템플릿 → 3단계 위저드(`QuickBuildModal`) → 자동 배선(`utils/quickBuild.ts`). 기본 템플릿 3종(`quickBuildTemplates.ts` — 소형 회의실/교육장/강당, 코드 상수). 슬롯은 중분류(`targetName`=`Equipment.name`) 우선 매칭 + 카테고리 폴백(`getCandidatesForSlot`), 연결은 동적 라인 타입 id 사용. 슬롯 기본 장비는 포트 적합도 스코어링(`pickBestCandidate`)으로 자동 선택 — 카탈로그에 포트 미입력 장비가 많아 필수. 배선은 one-to-one/fan-out/fan-in + 양방향 단일 잭 규칙 준수, 부족분은 경고 후 스킵(80% 골격 원칙). 생성 시 서브그래프만 `getLayoutedElements`로 레이아웃 후 추가(add)/교체(replace)
-- **빠른제작 템플릿 편집기** (`TemplateEditorModal`) — 위저드 Step 1에서 새 템플릿 생성/편집/삭제, 기본 제공 템플릿은 사본 생성 후 편집(원본 불변). 슬롯 폼(중분류 datalist 자동완성 + 현재 DB 매칭 종수 표시)·연결 폼(슬롯 쌍/라인 타입/분배/라벨). 저장 → `useStore.quickTemplates` → `librarySync`가 Firestore `quickTemplates` 컬렉션으로 실시간 push. 저장 직후 해당 템플릿으로 Step 2 자동 진입
+- **노드/엣지 선택 시각 표시** — 케이블 팔레트와 충돌하지 않도록 **무채색**(`--text-primary`: 다크=흰색/라이트=검정) 링+할로로 통일. 선택 노드는 1.5px 링 + 글로우 2겹(box-shadow), 선택 엣지는 선 색 유지 + 4px + 무채색 할로, 엣지 호버 3px (App.css — ⚠️ 호버 규칙을 selected 규칙보다 먼저 선언해야 selected가 이김. 악센트 파랑은 HDMI/USB, 회색은 SDI 색과 겹치므로 선택 표시에 색상 사용 금지)
+- **빠른제작 (Quick Build)** — 슬롯 기반 템플릿 → 3단계 위저드(`QuickBuildModal`) → 자동 배선(`utils/quickBuild.ts`). 템플릿은 **전부 사용자 정의** (기본 제공 템플릿 개념 없음 — 2026-07-08 사용자 결정으로 제거). 슬롯은 중분류(`targetName`=`Equipment.name`) 우선 매칭 + 카테고리 폴백(`getCandidatesForSlot`), 연결은 동적 라인 타입 id 사용. 슬롯 기본 장비는 포트 적합도 스코어링(`pickBestCandidate`)으로 자동 선택 — 카탈로그에 포트 미입력 장비가 많아 필수. 배선은 one-to-one/fan-out/fan-in + 양방향 단일 잭 규칙 준수, 부족분은 경고 후 스킵(80% 골격 원칙). 생성 시 서브그래프만 `getLayoutedElements`로 레이아웃 후 추가(add)/교체(replace)
+- **빠른제작 템플릿 편집기** (`TemplateEditorModal`) — 위저드 Step 1에서 새 템플릿 생성/편집/삭제. 슬롯 폼(중분류 datalist 자동완성 + 현재 DB 매칭 종수 표시)·연결 폼(슬롯 쌍/라인 타입/분배/라벨). 저장 → `useStore.quickTemplates` → `librarySync`가 Firestore `quickTemplates` 컬렉션으로 실시간 push. 저장 직후 해당 템플릿으로 Step 2 자동 진입
 
 ---
 
