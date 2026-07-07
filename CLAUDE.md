@@ -61,6 +61,11 @@ React + TypeScript + Vite 기반의 **AV System Configuration Builder**.
 - **`calculateNodeHeight()`** 로 이미지 여부 + 입출력 포트 수를 기반으로 높이 자동 산출
 - 오토 레이아웃 시 노드 겹침 방지를 위해 Dagre에 이 값을 주입해야 함
 
+### 엣지 지오메트리 & 교차 점프 (`src/utils/edgeGeometry.ts`)
+- 엣지 경로 지점 계산(`getEdgePoints`)은 렌더러(`CustomSmoothstepEdge`)와 교차 계산(`edgeProcessing.attachEdgeJumps`)이 **반드시 공유** — 한쪽만 수정하면 점프가 실제 교차점에서 어긋남
+- 교차 점프: 보이는 엣지끼리 H×V 세그먼트 교차 지점에서 수평선이 반원 아치로 점프. 좌표는 `getInternalNode()`의 실측 핸들 좌표 사용 (getPortYOffset 근사치는 헤더 실제 높이와 ~10px 오차가 있어 점프에는 사용 금지)
+- Firestore 쓰기는 `librarySync.ts`의 `sanitizeForFirestore`를 반드시 경유 — 편집 모달들이 빈 입력을 `undefined`로 저장하는데 Firestore가 undefined를 거부함 (v1.18에서 고친 "동기화 오류" 버그의 원인)
+
 ### 평행 엣지 처리 (`src/utils/edgeProcessing.ts`)
 3단계 알고리즘으로 선 교차를 최소화:
 - **Stage 1 (Fan-in):** 같은 목적지로 향하는 선들을 `sourceY` 오름차순 정렬 후 오프셋 배정 → 출발 Y 순서 = 분기점 X 순서로 맞춰 교차 방지

@@ -3,7 +3,7 @@ import type { Node, Edge } from '@xyflow/react';
 import { calculateNodeHeight, getPortYOffset } from '../store';
 
 const NODE_WIDTH = 220;
-const MIN_NODE_GAP = 24;
+const MIN_NODE_GAP = 40; // 노드 간 최소 세로 간격 — 엣지 통로 확보를 위해 여유 있게
 
 // These edge types define the directional signal flow (LR rank determination)
 const SIGNAL_EDGE_TYPES = new Set(['sdi', 'video', 'audio', 'usb']);
@@ -15,9 +15,9 @@ export function getLayoutedElements(nodes: Node[], edges: Edge[], direction = 'L
   graph.setDefaultEdgeLabel(() => ({}));
   graph.setGraph({
     rankdir: direction,
-    nodesep: 60,    // vertical gap between nodes in the same rank column
+    nodesep: 90,    // 같은 열 노드 사이 세로 간격 (엣지 통로 확보)
     edgesep: 30,
-    ranksep: 260,   // horizontal gap between rank columns
+    ranksep: 280,   // 열 사이 가로 간격 (splitOffset 분기 공간 확보)
     marginx: 50,
     marginy: 50,
   });

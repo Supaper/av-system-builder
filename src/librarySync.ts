@@ -198,18 +198,28 @@ export async function startLibrarySync(onStatus?: (s: SyncStatus) => void): Prom
   }
 }
 
+/**
+ * Firestore setDoc은 값이 undefined인 필드를 거부한다 (편집 모달들이 빈 입력을
+ * `manufacturer: undefined`처럼 저장하므로 그대로 쓰면 예외 → "동기화 오류").
+ * JSON 왕복으로 undefined 프로퍼티를 제거한 페이로드를 만든다.
+ */
+function sanitizeForFirestore<T>(fields: T): { json: string; payload: Record<string, unknown> } {
+  const json = JSON.stringify(fields);
+  return { json, payload: JSON.parse(json) };
+}
+
 async function writeEquipmentItem(eq: Equipment, onStatus?: (s: SyncStatus) => void): Promise<void> {
   try {
     const db = await getFirestoreDb();
     const { doc, setDoc } = await import('firebase/firestore');
     const { id, ...fields } = eq;
-    const json = JSON.stringify(fields);
+    const { json, payload } = sanitizeForFirestore(fields);
     if (byteSize(json) > MAX_DOC_BYTES) {
       console.warn(`장비 "${eq.name}" 데이터가 0.9MB를 초과하여 동기화를 건너뜁니다. 업로드 이미지를 줄이세요.`);
       onStatus?.('error');
       return;
     }
-    await setDoc(doc(db, 'equipment', id), fields);
+    await setDoc(doc(db, 'equipment', id), payload);
     onStatus?.('synced');
   } catch (e) {
     console.error('장비 저장 실패', eq.id, e);
@@ -250,7 +260,7 @@ async function writeLineTypeItem(lt: LineType): Promise<void> {
     const db = await getFirestoreDb();
     const { doc, setDoc } = await import('firebase/firestore');
     const { id, ...fields } = lt;
-    await setDoc(doc(db, 'lineTypes', id), fields);
+    await setDoc(doc(db, 'lineTypes', id), sanitizeForFirestore(fields).payload);
   } catch (e) {
     console.error('라인 타입 저장 실패', lt.id, e);
   }
@@ -284,7 +294,7 @@ async function writeEquipmentOptionItem(opt: EquipmentOption): Promise<void> {
     const db = await getFirestoreDb();
     const { doc, setDoc } = await import('firebase/firestore');
     const { id, ...fields } = opt;
-    await setDoc(doc(db, 'equipmentOptions', id), fields);
+    await setDoc(doc(db, 'equipmentOptions', id), sanitizeForFirestore(fields).payload);
   } catch (e) {
     console.error('장비 옵션 저장 실패', opt.id, e);
   }
@@ -318,7 +328,7 @@ async function writeCableCatalogItem(item: CableCatalogItem): Promise<void> {
     const db = await getFirestoreDb();
     const { doc, setDoc } = await import('firebase/firestore');
     const { id, ...fields } = item;
-    await setDoc(doc(db, 'cableCatalog', id), fields);
+    await setDoc(doc(db, 'cableCatalog', id), sanitizeForFirestore(fields).payload);
   } catch (e) {
     console.error('케이블 카탈로그 저장 실패', item.id, e);
   }
