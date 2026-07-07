@@ -58,6 +58,92 @@ function edgesConflict(infoI: EdgeEndpoints, infoJ: EdgeEndpoints): boolean {
 
 const SPACING = 20;
 
+/**
+ * 그룹(같은 소스/타겟을 공유하는 엣지들)의 채널(세로 통로) 좌→우 순서를
+ * 실제 기하학적 교차 수가 최소가 되도록 재배열한다.
+ *
+ * 기존 휴리스틱(targetY/sourceY 오름차순 = 가까운 쪽이 왼쪽 통로)은 엣지들의
+ * 세로 스팬이 겹치지 않을 때만 교차가 없다. 팬아웃에서 위쪽 타겟의 입력 Y가
+ * 아래쪽 출력 포트 Y보다 낮으면(스팬 겹침) 반대로 "먼 타겟이 왼쪽 통로"를
+ * 써야 교차가 없다 (실사용 버그: 매트릭스 Out2→위TV / Out3→아래TV 교차).
+ *
+ * n ≤ 6이면 순열 전수 탐색, 그 이상은 인접 교환 개선. 동점이면 기존 순서 유지.
+ * 입력 active는 기존 휴리스틱으로 정렬된 상태를 전제한다.
+ */
+function optimizeChannelOrder(active: Edge[], infoMap: Map<string, EdgeEndpoints | null>): Edge[] {
+  const n = active.length;
+  if (n < 2) return active;
+  const infos = active.map(e => infoMap.get(e.id)!);
+  // 정방향 수평 엣지 그룹만 대상 (백엣지 U자 경로·수직 레이아웃은 기존 순서 유지)
+  if (infos.some(i => !i.isHorizontal || i.targetX < i.sourceX - 20)) return active;
+
+  // order[pos] = active 인덱스. 각 순서에 대해 오프셋을 가정 배치하고
+  // (세로선 × 다른 엣지의 수평선) 교차를 전부 센다.
+  const cost = (order: number[]): number => {
+    const xByIdx: number[] = [];
+    order.forEach((edgeIdx, pos) => {
+      xByIdx[edgeIdx] = infos[edgeIdx].baseX + (pos - (n - 1) / 2) * SPACING;
+    });
+    let c = 0;
+    for (let i = 0; i < n; i++) {
+      const xi = xByIdx[i];
+      const yLo = Math.min(infos[i].sourceY, infos[i].targetY) + 2;
+      const yHi = Math.max(infos[i].sourceY, infos[i].targetY) - 2;
+      for (let j = 0; j < n; j++) {
+        if (i === j) continue;
+        const vj = infos[j];
+        const xj = xByIdx[j];
+        // j의 소스 쪽 수평선 (sourceX→분기점, y=sourceY)과 i의 세로선 교차
+        if (vj.sourceY > yLo && vj.sourceY < yHi &&
+            xi > Math.min(vj.sourceX, xj) + 2 && xi < Math.max(vj.sourceX, xj) - 2) c++;
+        // j의 타겟 쪽 수평선 (분기점→targetX, y=targetY)과 i의 세로선 교차
+        if (vj.targetY > yLo && vj.targetY < yHi &&
+            xi > Math.min(xj, vj.targetX) + 2 && xi < Math.max(xj, vj.targetX) - 2) c++;
+      }
+    }
+    return c;
+  };
+
+  const base = active.map((_, i) => i);
+  let bestCost = cost(base);
+  if (bestCost === 0) return active; // 기존 휴리스틱으로 이미 무교차 — 대부분의 경우
+
+  let bestOrder = base;
+  if (n <= 6) {
+    // 순열 전수 탐색 (≤ 720개 × 쌍 검사 — 무시할 만한 비용)
+    const permute = (rest: number[], cur: number[]) => {
+      if (rest.length === 0) {
+        const c = cost(cur);
+        if (c < bestCost) { bestCost = c; bestOrder = [...cur]; }
+        return;
+      }
+      for (let i = 0; i < rest.length; i++) {
+        if (bestCost === 0) return;
+        cur.push(rest[i]);
+        permute([...rest.slice(0, i), ...rest.slice(i + 1)], cur);
+        cur.pop();
+      }
+    };
+    permute(base, []);
+  } else {
+    // 큰 그룹: 인접 교환 언덕 오르기
+    const order = [...base];
+    let improved = true;
+    let guard = 0;
+    while (improved && guard++ < 20) {
+      improved = false;
+      for (let i = 0; i + 1 < n; i++) {
+        [order[i], order[i + 1]] = [order[i + 1], order[i]];
+        const c = cost(order);
+        if (c < bestCost) { bestCost = c; improved = true; }
+        else { [order[i], order[i + 1]] = [order[i + 1], order[i]]; }
+      }
+    }
+    bestOrder = order;
+  }
+  return bestOrder.map(i => active[i]);
+}
+
 /** 양쪽 끝이 모두 양방향(bidi) 핸들인 엣지인가 — bidi 핸들만 source_/target_ 접두를 가진다 */
 export function isBidiBidiEdge(edge: Edge): boolean {
   return !!edge.sourceHandle?.startsWith('source_') && !!edge.targetHandle?.startsWith('target_');
@@ -200,8 +286,9 @@ export function processEdgesWithOffsets(edges: Edge[], nodes: Node[]): Edge[] {
     if (active.length < 2) return;
 
     active.sort((a, b) => infoMap.get(a.id)!.sourceY - infoMap.get(b.id)!.sourceY);
-    const n = active.length;
-    active.forEach((e, i) => {
+    const ordered = optimizeChannelOrder(active, infoMap);
+    const n = ordered.length;
+    ordered.forEach((e, i) => {
       edgeOffsets[e.id] = (i - (n - 1) / 2) * SPACING;
       handled.add(e.id);
     });
@@ -222,8 +309,9 @@ export function processEdgesWithOffsets(edges: Edge[], nodes: Node[]): Edge[] {
     if (active.length < 2) return;
 
     active.sort((a, b) => infoMap.get(a.id)!.targetY - infoMap.get(b.id)!.targetY);
-    const n = active.length;
-    active.forEach((e, i) => {
+    const ordered = optimizeChannelOrder(active, infoMap);
+    const n = ordered.length;
+    ordered.forEach((e, i) => {
       edgeOffsets[e.id] = (i - (n - 1) / 2) * SPACING;
     });
   });
