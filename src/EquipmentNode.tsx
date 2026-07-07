@@ -72,9 +72,10 @@ export function EquipmentNode({ id: nodeId, data }: NodeProps<EquipmentNodeType>
   const showOverlay = zoom < 0.55;
   const isCompact   = zoom < 0.3;
 
-  // Target ~10px on screen → font-size in flow coords = 10 / zoom, capped to fit within node
-  const overlayNameSize  = showOverlay ? Math.min(28, Math.max(13, Math.round(10 / zoom))) : 13;
-  const overlayModelSize = showOverlay ? Math.min(18, Math.max(10, Math.round( 7 / zoom))) : 10;
+  // 화면상 ~9px 목표 → 플로우 좌표 폰트 = 9 / zoom. 깊은 줌아웃(minZoom 0.05)에서도
+  // 구조 파악이 가능하도록 상한을 노드 폭이 허용하는 선까지 확대
+  const overlayNameSize  = showOverlay ? Math.min(44, Math.max(13, Math.round(9 / zoom))) : 13;
+  const overlayModelSize = showOverlay ? Math.min(26, Math.max(10, Math.round(6.5 / zoom))) : 10;
 
   // ── Port renderers (unchanged — always full detail) ────────────────────────
   const inputHandles = data.inputs.map((port) => {

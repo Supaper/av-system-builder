@@ -53,6 +53,10 @@ export function CustomSmoothstepEdge({
   const otherEdges = useRFStore(s => s.edges);
   const nodeLookup = useRFStore(s => s.nodeLookup);
 
+  // 줌아웃 시 라벨을 역스케일해 축소 상태에서도 식별 가능하게 유지
+  const zoom = useRFStore(s => s.transform[2]);
+  const labelScale = Math.min(3.2, Math.max(1, 0.85 / zoom));
+
   // 경로 지점 계산은 edgeGeometry로 일원화 (교차 계산과 동일 지오메트리)
   const points = getEdgePoints({ sourceX, sourceY, targetX, targetY, isHorizontal, splitOffset });
 
@@ -89,7 +93,7 @@ export function CustomSmoothstepEdge({
           <div
             style={{
               position: 'absolute',
-              transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
+              transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px) scale(${labelScale})`,
               background: 'rgba(10, 16, 32, 0.92)',
               padding: '2px 7px',
               borderRadius: 4,
@@ -111,7 +115,7 @@ export function CustomSmoothstepEdge({
           <div
             style={{
               position: 'absolute',
-              transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
+              transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px) scale(${labelScale})`,
               background: bomLabelMissing ? 'rgba(245,158,11,0.12)' : 'rgba(10, 16, 32, 0.92)',
               padding: '3px 8px',
               borderRadius: 4,

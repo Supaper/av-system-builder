@@ -185,7 +185,7 @@ interface EquipmentOption {
 - 동적 노드 높이 계산
 - 엣지 라벨 편집 (더블클릭 → `EditEdgeModal`)
 - 엣지 필터링 + 고립 노드 dimming
-- **LOD(Level of Detail) 오버레이:** 줌 < 0.55 시 장비명 + 수량 역스케일 표시
+- **LOD(Level of Detail) 오버레이:** 줌 < 0.55 시 모델명(대) + 제품유형(소) + 수량 역스케일 표시 (최대 44px/26px 캡, `EquipmentNode.tsx`)
 - **수량/재활용 배지:** 노드 헤더에 quantity, isReused 배지
 - Diagram Lock
 - 접이식 사이드바
@@ -214,6 +214,13 @@ interface EquipmentOption {
 - **장비 라이브러리 그룹핑 토글** — 카테고리/제조사 기준 전환 (`groupMode` state, LocalStorage `av-builder-group-mode` 저장). 제조사 섹션은 `manufacturer` 값에서 동적 생성(`librarySections`), 두 모드 모두 동일한 `name` 기준 중분류 적용. ⚠️ `App.tsx`에서 lucide-react의 `Map` 아이콘 import가 전역 `Map` 생성자를 가리므로 새 코드에서 `new Map()` 사용 금지 (Record 사용)
 - **장비 라이브러리 원본 편집** — 사이드바 항목 더블클릭 → `EditEquipmentModal`에서 장비 DB의 모든 필드(이름·모델·제조사·카테고리·설명·시리즈·사진·포트) 수정 및 삭제. `updateEquipment`/`removeEquipment` (store.ts) → `librarySync` 통해 Firestore 실시간 반영. 노드 인스턴스 편집(`EditNodeModal`, 캔버스 노드 더블클릭)과는 별개 — 카탈로그 수정은 배치된 노드에 영향 없음
 - **옵션 카드 카탈로그 관리 UI** — `EditEquipmentModal` 안의 "호환 옵션 카드" 섹션에서 해당 장비와 호환되는 옵션 조회·편집·신규 생성·삭제 (`EditOptionModal`). 신규 생성 시 현재 장비의 시리즈(없으면 모델명)가 호환 조건으로 프리필. 옵션 카탈로그가 시드 스크립트 없이 UI에서 관리 가능해짐
+- **엣지 교차 점프(hop) + 세로 통로 스윕** — 교차 지점에서 수평선이 반원 아치로 수직선을 넘어감. 점프는 `CustomSmoothstepEdge` 렌더 시점에 RF 스토어(`s.edges` + `s.nodeLookup`)에서 계산 (App 레벨 `getInternalNode` 사용 금지 — 한 프레임 지난 좌표 고착 버그). 지오메트리는 `src/utils/edgeGeometry.ts`로 일원화
+- **양방향 포트 단일 연결 강제 + 방향 자동 전환** — 한쪽 핸들 연결 시 반대쪽 비활성화. 양방향↔양방향 엣지는 노드 좌우 위치에 따라 렌더 시점에 방향 정규화 (`normalizeBidiEdges`, 저장 데이터 불변)
+- **노드 위치 고려 오토레이아웃** — Sugiyama식 가중 교대 스윕 (L→R 들어오는 선 + R→L 타겟 포트 순번, 신호 엣지 가중치 3, 2회 반복) — 입력 포트 순번대로 소스 노드가 위→아래 배치
+- **상단바 Share 통합 메뉴** — Import/Export/공유 링크를 단일 `Share` 드롭다운으로 통합 (`isShareMenuOpen`). 섹션: 클라우드 공유 링크 / 가져오기 3종 / 내보내기 4종(PDF 포함)
+- **반응형 헤더** — `.app-header` flex-wrap 기반. 좁은 화면에서 중앙 툴바가 둘째 줄로 내려감 (1560px 미디어쿼리로 넓은 화면은 한 줄 유지). 어떤 해상도에서도 버튼 잘림 없음
+- **깊은 줌아웃 + 라벨 역스케일** — `minZoom={0.05}`. LOD 오버레이 캡 44/26px, 엣지 라벨 `labelScale = min(3.2, max(1, 0.85/zoom))` (`CustomSmoothstepEdge.tsx`)
+- **노드/엣지 선택 시각 표시** — 선택 노드는 악센트 아웃라인+글로우, 선택 엣지는 4px+글로우, 엣지 호버 3px (App.css — ⚠️ 호버 규칙을 selected 규칙보다 먼저 선언해야 selected가 이김)
 
 ---
 
