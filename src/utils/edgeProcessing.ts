@@ -1,5 +1,7 @@
 import type { Node, Edge } from '@xyflow/react';
 import { calculateNodeHeight, getPortYOffset } from '../store';
+import { getEdgePoints, computeJumps } from './edgeGeometry';
+import type { XY } from './edgeGeometry';
 
 interface EdgeEndpoints {
   sourceX: number;
@@ -19,7 +21,9 @@ function getEdgeEndpoints(edge: Edge, nodeMap: Record<string, Node>): EdgeEndpoi
   const isHorizontal = (targetNode as any).targetPosition !== 'top';
 
   if (isHorizontal) {
-    const sourceX = sourceNode.position.x + 200;
+    // React Flow가 측정한 실제 노드 폭 사용 (핸들은 노드 우측 경계에 위치)
+    const srcWidth = (sourceNode as any).measured?.width ?? (sourceNode as any).width ?? 200;
+    const sourceX = sourceNode.position.x + srcWidth;
     const targetX = targetNode.position.x;
     const sourceY = sourceNode.position.y + getPortYOffset(sourceNode.data as any, edge.sourceHandle);
     const targetY = targetNode.position.y + getPortYOffset(targetNode.data as any, edge.targetHandle);
@@ -238,4 +242,70 @@ export function processEdgesWithOffsets(edges: Edge[], nodes: Node[]): Edge[] {
       splitOffset: edgeOffsets[edge.id] ?? 0,
     },
   }));
+}
+
+/**
+ * React Flow 내부 실측값(internals.handleBounds)으로 엣지 양끝 좌표를 구한다.
+ * getPortYOffset 기반 근사치는 헤더 실제 높이와 어긋날 수 있어(텍스트 줄바꿈 등)
+ * 점프처럼 픽셀 정밀도가 필요한 계산에는 반드시 이 실측 좌표를 쓴다 —
+ * CustomSmoothstepEdge가 렌더링에 받는 좌표와 동일한 소스다.
+ */
+function getEdgeEndpointsFromInternals(
+  edge: Edge,
+  getInternalNode: (id: string) => any
+): { sourceX: number; sourceY: number; targetX: number; targetY: number; isHorizontal: boolean } | null {
+  const sn = getInternalNode(edge.source);
+  const tn = getInternalNode(edge.target);
+  if (!sn?.internals?.handleBounds || !tn?.internals?.handleBounds) return null;
+
+  const sBounds = sn.internals.handleBounds.source || [];
+  const tBounds = tn.internals.handleBounds.target || [];
+  const sb = (edge.sourceHandle ? sBounds.find((h: any) => h.id === edge.sourceHandle) : null) ?? sBounds[0];
+  const tb = (edge.targetHandle ? tBounds.find((h: any) => h.id === edge.targetHandle) : null) ?? tBounds[0];
+  if (!sb || !tb) return null;
+
+  return {
+    sourceX: sn.internals.positionAbsolute.x + sb.x + sb.width / 2,
+    sourceY: sn.internals.positionAbsolute.y + sb.y + sb.height / 2,
+    targetX: tn.internals.positionAbsolute.x + tb.x + tb.width / 2,
+    targetY: tn.internals.positionAbsolute.y + tb.y + tb.height / 2,
+    isHorizontal: ((tn as any).targetPosition ?? 'left') !== 'top',
+  };
+}
+
+/**
+ * 화면에 보이는 엣지들끼리의 H×V 교차 지점을 계산해 각 엣지 data.jumps에 부착.
+ * 수평 세그먼트를 가진 쪽이 교차점에서 반원 아치로 "점프"한다.
+ *
+ * processEdgesWithOffsets 이후(오프셋 확정 후), 라인 타입 필터링 이후의
+ * "실제로 보이는" 엣지 목록에 적용해야 한다 — 숨긴 선 위를 점프하면 어색하다.
+ * getInternalNode는 useReactFlow()의 것 — 실측 핸들 좌표용 (마운트 전이면
+ * handleBounds가 없어 해당 엣지는 건너뛰고, 측정 완료 후 재계산된다).
+ */
+export function attachEdgeJumps(
+  edges: Edge[],
+  getInternalNode: (id: string) => any
+): Edge[] {
+  if (edges.length < 2) return edges;
+
+  const polylines = new Map<string, XY[]>();
+  edges.forEach(e => {
+    const info = getEdgeEndpointsFromInternals(e, getInternalNode);
+    if (!info) return;
+    const splitOffset = ((e as any).data?.splitOffset as number) ?? 0;
+    polylines.set(e.id, getEdgePoints({ ...info, splitOffset }));
+  });
+
+  return edges.map(edge => {
+    const points = polylines.get(edge.id);
+    if (!points) return edge;
+    const others: XY[][] = [];
+    polylines.forEach((poly, id) => { if (id !== edge.id) others.push(poly); });
+    const jumps = computeJumps(points, others);
+    if (jumps.length === 0 && !(edge as any).data?.jumps) return edge;
+    return {
+      ...edge,
+      data: { ...((edge as any).data || {}), jumps },
+    };
+  });
 }

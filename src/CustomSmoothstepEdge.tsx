@@ -1,6 +1,8 @@
 import { BaseEdge, EdgeLabelRenderer } from '@xyflow/react';
 import type { EdgeProps } from '@xyflow/react';
 import type { BomRowData } from './BomBulkModal';
+import { getEdgePoints, buildOrthogonalPath } from './utils/edgeGeometry';
+import type { XY } from './utils/edgeGeometry';
 
 function buildBomLabel(bomRows: BomRowData[]): string {
   const filled = bomRows.filter(r => r.productName?.trim());
@@ -35,87 +37,21 @@ export function CustomSmoothstepEdge({
   markerEnd,
   data,
 }: EdgeProps) {
-  const edgeData = data as { splitOffset?: number; label?: string; isBomMode?: boolean; bomRows?: BomRowData[] } | undefined;
+  const edgeData = data as { splitOffset?: number; label?: string; isBomMode?: boolean; bomRows?: BomRowData[]; jumps?: XY[] } | undefined;
   const splitOffset = edgeData?.splitOffset ?? 0;
   const label = edgeData?.label ?? '';
   const isBomMode = edgeData?.isBomMode ?? false;
   const bomRows: BomRowData[] = edgeData?.bomRows ?? [];
+  const jumps: XY[] = edgeData?.jumps ?? [];
   const isHorizontal = sourcePosition === 'left' || sourcePosition === 'right';
 
   const bomLabel = isBomMode ? buildBomLabel(bomRows) : '';
   const bomLabelMissing = isBomMode && bomLabel === '⚠ 미입력';
 
-  let path = '';
-
-  if (isHorizontal) {
-    const isBackEdge = targetX < sourceX - 20;
-
-    if (isBackEdge) {
-      // Back-edge (target is LEFT of source): route below both endpoints as a U-shape
-      // so it doesn't cross forward edges in the diagram.
-      const exitH = 50;
-      const R = 10;
-      const loopY = Math.max(sourceY, targetY) + 90 + Math.abs(splitOffset);
-      const exitX = sourceX + exitH;
-      const entryX = targetX - exitH;
-
-      const dyTop1 = loopY - sourceY;   // height from source to loop bottom (source side)
-      const dyTop2 = loopY - targetY;   // height from loop bottom to target (target side)
-      const dxMid = exitX - entryX;     // width of the horizontal bottom segment
-
-      if (dyTop1 < R * 2 || dyTop2 < R * 2 || dxMid < R * 2) {
-        path = `M ${sourceX} ${sourceY} H ${exitX} V ${loopY} H ${entryX} V ${targetY} H ${targetX}`;
-      } else {
-        path =
-          `M ${sourceX} ${sourceY} ` +
-          `H ${exitX - R} ` +
-          `Q ${exitX} ${sourceY} ${exitX} ${sourceY + R} ` +
-          `V ${loopY - R} ` +
-          `Q ${exitX} ${loopY} ${exitX - R} ${loopY} ` +
-          `H ${entryX + R} ` +
-          `Q ${entryX} ${loopY} ${entryX} ${loopY - R} ` +
-          `V ${targetY + R} ` +
-          `Q ${entryX} ${targetY} ${entryX + R} ${targetY} ` +
-          `H ${targetX}`;
-      }
-    } else {
-    const midpointX = (sourceX + targetX) / 2;
-    const splitX = midpointX + splitOffset;
-    const dx = splitX > sourceX ? 1 : -1;
-    const dy = targetY > sourceY ? 1 : -1;
-    const R = Math.min(10, Math.abs(splitX - sourceX) / 2, Math.abs(targetX - splitX) / 2, Math.abs(targetY - sourceY) / 2);
-
-    if (R <= 0) {
-      path = `M ${sourceX} ${sourceY} H ${splitX} V ${targetY} H ${targetX}`;
-    } else {
-      path =
-        `M ${sourceX} ${sourceY} ` +
-        `H ${splitX - R * dx} ` +
-        `Q ${splitX} ${sourceY} ${splitX} ${sourceY + R * dy} ` +
-        `V ${targetY - R * dy} ` +
-        `Q ${splitX} ${targetY} ${splitX + R * dx} ${targetY} ` +
-        `H ${targetX}`;
-    }
-    }
-  } else {
-    const midpointY = (sourceY + targetY) / 2;
-    const splitY = midpointY + splitOffset;
-    const dx = targetX > sourceX ? 1 : -1;
-    const dy = splitY > sourceY ? 1 : -1;
-    const R = Math.min(10, Math.abs(splitY - sourceY) / 2, Math.abs(targetY - splitY) / 2, Math.abs(targetX - sourceX) / 2);
-
-    if (R <= 0) {
-      path = `M ${sourceX} ${sourceY} V ${splitY} H ${targetX} V ${targetY}`;
-    } else {
-      path =
-        `M ${sourceX} ${sourceY} ` +
-        `V ${splitY - R * dy} ` +
-        `Q ${sourceX} ${splitY} ${sourceX + R * dx} ${splitY} ` +
-        `H ${targetX - R * dx} ` +
-        `Q ${targetX} ${splitY} ${targetX} ${splitY + R * dy} ` +
-        `V ${targetY}`;
-    }
-  }
+  // 경로 지점 계산은 edgeGeometry로 일원화 — 교차 점프(hop) 계산과 반드시
+  // 같은 지오메트리를 봐야 하기 때문 (edgeProcessing.attachEdgeJumps 참고)
+  const points = getEdgePoints({ sourceX, sourceY, targetX, targetY, isHorizontal, splitOffset });
+  const path = buildOrthogonalPath(points, jumps);
 
   // Midpoint for label placement (approximate center of the routing path)
   const labelX = isHorizontal

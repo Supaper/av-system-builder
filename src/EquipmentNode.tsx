@@ -73,7 +73,7 @@ export function EquipmentNode({ data }: NodeProps<EquipmentNodeType>) {
           style={{ background: c, width: 8, height: 8, left: -16, border: '1.5px solid var(--handle-border)' }} />
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           <div style={{ width: 5, height: 5, borderRadius: '50%', background: c }} />
-          <span style={{ fontSize: 10, color: 'var(--text-secondary)' }}>{port.label}</span>
+          <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-primary)', opacity: 0.82 }}>{port.label}</span>
         </div>
       </div>
     );
@@ -84,7 +84,7 @@ export function EquipmentNode({ data }: NodeProps<EquipmentNodeType>) {
     return (
       <div key={port.id} style={{ position: 'relative', height: PORT_ROW_HEIGHT, display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <span style={{ fontSize: 10, color: 'var(--text-secondary)' }}>{port.label}</span>
+          <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-primary)', opacity: 0.82 }}>{port.label}</span>
           <div style={{ width: 5, height: 5, borderRadius: '50%', background: c }} />
         </div>
         <Handle type="source" position={Position.Right} id={port.id}
@@ -155,7 +155,7 @@ export function EquipmentNode({ data }: NodeProps<EquipmentNodeType>) {
             gap: 4,
           }}
         >
-          {/* Equipment name — wraps within node, inverse-scaled for readability */}
+          {/* 큰 글씨 = 모델명 (역스케일), 작은 글씨 = 제품유형 */}
           <div style={{
             fontSize: overlayNameSize,
             fontWeight: 800,
@@ -164,10 +164,10 @@ export function EquipmentNode({ data }: NodeProps<EquipmentNodeType>) {
             wordBreak: 'break-word',
             overflowWrap: 'break-word',
           }}>
-            {data.name}
+            {data.model}
           </div>
 
-          {/* Model — only at medium LOD, hidden when compact */}
+          {/* 제품유형 — 중간 줌에서만, 컴팩트 줌에서는 숨김 */}
           {!isCompact && (
             <div style={{
               fontSize: overlayModelSize,
@@ -175,7 +175,7 @@ export function EquipmentNode({ data }: NodeProps<EquipmentNodeType>) {
               lineHeight: 1.2,
               wordBreak: 'break-word',
             }}>
-              {data.model}
+              {data.name}
             </div>
           )}
         </div>
@@ -194,8 +194,9 @@ export function EquipmentNode({ data }: NodeProps<EquipmentNodeType>) {
           {iconMap[data.category]}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
-            {data.name}
+          {/* 큰 글씨 = 모델명 (실무에서 장비를 식별하는 기준), 작은 글씨 = 제품유형 */}
+          <div style={{ fontSize: 13, fontWeight: 800, lineHeight: '18px', letterSpacing: '-0.01em', display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap', color: 'var(--text-primary)' }}>
+            {data.model}
             {isReused && (
               <span style={{
                 fontSize: 9, fontWeight: 700, padding: '1px 5px', borderRadius: 3,
@@ -206,7 +207,7 @@ export function EquipmentNode({ data }: NodeProps<EquipmentNodeType>) {
               </span>
             )}
           </div>
-          <div style={{ fontSize: 10, color: 'var(--text-secondary)' }}>{data.model}</div>
+          <div style={{ fontSize: 10, lineHeight: '15px', color: 'var(--text-secondary)', letterSpacing: '0.02em' }}>{data.name}</div>
         </div>
       </div>
 

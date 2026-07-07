@@ -15,7 +15,7 @@ import jsPDF from 'jspdf';
 
 import { useStore, getDefaultEquipmentImage, CATEGORY_LABELS } from './store';
 import { getLayoutedElements } from './utils/layout';
-import { processEdgesWithOffsets } from './utils/edgeProcessing';
+import { processEdgesWithOffsets, attachEdgeJumps } from './utils/edgeProcessing';
 import type { EquipmentCategory, Equipment } from './store';
 import { EquipmentNode } from './EquipmentNode';
 import { AddEquipmentModal } from './AddEquipmentModal';
@@ -86,13 +86,15 @@ function FlowBuilder() {
     );
   }, [equipmentDB, equipmentSearch]);
 
+  const { screenToFlowPosition, fitView, zoomIn, zoomOut, getInternalNode } = useReactFlow();
+
   const processedEdges = useMemo(
     () => processEdgesWithOffsets(edges, nodes),
     [edges, nodes]
   );
 
   const visibleEdges = useMemo(() => {
-    return processedEdges.filter(edge => {
+    const filtered = processedEdges.filter(edge => {
       const strokeColor = edge.style?.stroke;
       let lineTypeId = (edge as any).data?.lineTypeId;
       if (!lineTypeId && strokeColor) {
@@ -104,7 +106,11 @@ function FlowBuilder() {
       if (!lineTypeId) return true;
       return !hiddenLineTypeIds.includes(lineTypeId);
     });
-  }, [processedEdges, hiddenLineTypeIds, lineTypes]);
+    // 보이는 선끼리의 교차 지점에 점프(hop) 부착 — 필터링 후에 계산해야
+    // 숨겨진 선 위를 점프하는 어색함이 없다. 좌표는 RF 실측값(getInternalNode) 사용.
+    return attachEdgeJumps(filtered, getInternalNode);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [processedEdges, hiddenLineTypeIds, lineTypes, nodes]);
 
   const [isBomMode, setIsBomMode] = useState(false);
   const [isBomBulkModalOpen, setIsBomBulkModalOpen] = useState(false);
@@ -138,7 +144,6 @@ function FlowBuilder() {
   }, [nodes, visibleEdges, hiddenLineTypeIds]);
   
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
-  const { screenToFlowPosition, fitView, zoomIn, zoomOut } = useReactFlow();
 
   const [clipboard, setClipboard] = useState<{ nodes: Node[]; edges: Edge[] } | null>(null);
 
@@ -628,7 +633,7 @@ function FlowBuilder() {
         <div className="header-title">
           <Settings size={14} color="var(--accent-color)" />
           <span>AV System Builder</span>
-          <span className="version-tag">v1.17</span>
+          <span className="version-tag">v1.18</span>
           <button
             className="glass-button icon-btn"
             onClick={handleNewDiagram}
@@ -1201,8 +1206,8 @@ function FlowBuilder() {
                       )}
                     </div>
                     <div className="equipment-info">
-                      <div className="equipment-name">{eq.name}</div>
-                      <div className="equipment-model">{eq.model}</div>
+                      <div className="equipment-name">{eq.model}</div>
+                      <div className="equipment-model">{eq.name}{eq.manufacturer ? ` · ${eq.manufacturer}` : ''}</div>
                     </div>
                   </div>
                 );
