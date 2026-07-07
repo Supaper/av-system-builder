@@ -171,6 +171,50 @@ export interface DiagramPreset {
   updatedAt: string;
 }
 
+// ── 빠른제작 (Quick Build) 템플릿 ──────────────────────────────────────────
+// 템플릿은 구체 장비가 아니라 "자리(슬롯)"를 저장한다. 생성 시점에 사용자가
+// 슬롯마다 실제 장비를 대입하면 연결 정의가 실제 포트 엣지로 변환된다.
+
+/** 장비 슬롯 — 중분류(name) 우선 매칭, 없으면 카테고리로 폴백 */
+export interface TemplateSlot {
+  slotId: string;
+  label: string;                 // UI 표시명: "메인 디스플레이"
+  category: EquipmentCategory;   // 폴백 후보 필터 + 뱃지 표시
+  targetName?: string;           // 중분류(Equipment.name) 우선 필터 (예: "매트릭스 스위처")
+  quantity: number;              // 기본 수량 (위저드에서 조정 가능)
+  defaultEquipmentId?: string;   // 있으면 드롭다운 초기값
+}
+
+/** 슬롯 간 연결 정의 — lineTypeId는 동적 라인 타입 id (포트 타입과 동일 체계) */
+export interface TemplateConnection {
+  id: string;
+  fromSlot: string;
+  toSlot: string;
+  lineTypeId: string;            // 'video' | 'sdi' | 'audio' | ... (lineTypes 참조)
+  distribution: 'one-to-one' | 'fan-out' | 'fan-in';
+  edgeLabel?: string;            // "HDMI", "Dante" 등 케이블 라벨
+}
+
+export interface QuickBuildTemplate extends Record<string, unknown> {
+  id: string;
+  name: string;
+  description?: string;
+  isBuiltIn?: boolean;           // 기본 제공 템플릿 (코드 상수, Firestore 미저장)
+  slots: TemplateSlot[];
+  connections: TemplateConnection[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+/** 슬롯의 장비 후보 조회 — 중분류(name) 정확 일치 우선, 매칭 0개면 카테고리 폴백 */
+export const getCandidatesForSlot = (slot: TemplateSlot, db: Equipment[]): Equipment[] => {
+  if (slot.targetName) {
+    const byName = db.filter(eq => eq.name === slot.targetName);
+    if (byName.length > 0) return byName;
+  }
+  return db.filter(eq => eq.category === slot.category);
+};
+
 const generatePorts = (count: number, prefix: string, type: PortType, direction: 'in' | 'out' | 'both'): Port[] => {
   return Array.from({ length: count }).map((_, i) => ({
     id: `${direction}-${prefix.toLowerCase()}-${i + 1}`,
@@ -408,6 +452,12 @@ interface AppState {
   updateCableCatalogItem: (id: string, item: Omit<CableCatalogItem, 'id'>) => void;
   removeCableCatalogItem: (id: string) => void;
 
+  // 사용자 정의 빠른제작 템플릿 (기본 제공 3종은 코드 상수라 여기 포함되지 않음)
+  quickTemplates: QuickBuildTemplate[];
+  addQuickTemplate: (tpl: Omit<QuickBuildTemplate, 'id'>) => void;
+  updateQuickTemplate: (id: string, tpl: Partial<QuickBuildTemplate>) => void;
+  removeQuickTemplate: (id: string) => void;
+
   nodes: Node[];
   edges: Edge[];
   onNodesChange: OnNodesChange;
@@ -442,14 +492,17 @@ export const useStore = create<AppState>((set, get) => {
   let initialNodes: Node[] = [];
   let initialEdges: Edge[] = [];
   let initialEqDBSaved: Equipment[] = initialEquipmentDB;
+  let initialQuickTemplates: QuickBuildTemplate[] = [];
 
   try {
     const n = localStorage.getItem('av-builder-active-nodes');
     const e = localStorage.getItem('av-builder-active-edges');
     const d = localStorage.getItem('av-builder-active-eqdb');
+    const q = localStorage.getItem('av-builder-quick-templates');
     if (n) initialNodes = JSON.parse(n);
     if (e) initialEdges = JSON.parse(e);
     if (d) initialEqDBSaved = JSON.parse(d);
+    if (q) initialQuickTemplates = JSON.parse(q);
   } catch (err) {
     console.error('Failed to load initial storage state', err);
   }
@@ -488,6 +541,23 @@ export const useStore = create<AppState>((set, get) => {
     })),
     removeEquipmentOption: (id) => set((state) => ({
       equipmentOptions: state.equipmentOptions.filter(o => o.id !== id)
+    })),
+
+    quickTemplates: initialQuickTemplates,
+    addQuickTemplate: (tpl) => set((state) => ({
+      quickTemplates: [...state.quickTemplates, {
+        ...tpl,
+        id: `qbt-${Date.now()}`,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      } as QuickBuildTemplate]
+    })),
+    updateQuickTemplate: (id, tpl) => set((state) => ({
+      quickTemplates: state.quickTemplates.map(t =>
+        t.id === id ? { ...t, ...tpl, id, updatedAt: new Date().toISOString() } : t)
+    })),
+    removeQuickTemplate: (id) => set((state) => ({
+      quickTemplates: state.quickTemplates.filter(t => t.id !== id)
     })),
 
     cableCatalog: [],
@@ -817,6 +887,7 @@ if (typeof window !== 'undefined') {
       localStorage.setItem('av-builder-active-nodes', JSON.stringify(state.nodes));
       localStorage.setItem('av-builder-active-edges', JSON.stringify(state.edges));
       localStorage.setItem('av-builder-active-eqdb', JSON.stringify(state.equipmentDB));
+      localStorage.setItem('av-builder-quick-templates', JSON.stringify(state.quickTemplates));
     } catch (e) {
       console.error('Failed to persist active state', e);
     }
