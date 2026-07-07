@@ -47,8 +47,9 @@ export function getEdgePoints(g: EdgeGeomInput): XY[] {
       ];
     }
 
-    // 수평 직선에 가까우면 굴곡 없이 직결
-    if (Math.abs(sourceY - targetY) < 1) {
+    // 수평 직선에 가까우면(수 px 이내) 굴곡 없이 직결 — 미세한 S자 꺾임 방지.
+    // 몇 px의 기울기는 수백 px 길이에서 시각적으로 직선과 구분되지 않는다.
+    if (Math.abs(sourceY - targetY) < 8) {
       return [
         { x: sourceX, y: sourceY },
         { x: targetX, y: targetY },
@@ -78,6 +79,34 @@ export function getEdgePoints(g: EdgeGeomInput): XY[] {
     { x: targetX, y: splitY },
     { x: targetX, y: targetY },
   ];
+}
+
+/**
+ * React Flow 내부 nodeLookup에서 엣지 양끝 실측 좌표를 구한다.
+ * 렌더 시점의 lookup을 쓰면 이 엣지가 props로 받는 좌표와 항상 같은 프레임이다
+ * (App 레벨 memo에서 읽으면 RF 반영 전의 한 프레임 지난 좌표를 읽을 수 있음).
+ */
+export function getEdgeEndpointsFromLookup(
+  edge: { source: string; target: string; sourceHandle?: string | null; targetHandle?: string | null },
+  nodeLookup: Map<string, any>
+): Omit<EdgeGeomInput, 'splitOffset'> | null {
+  const sn = nodeLookup.get(edge.source);
+  const tn = nodeLookup.get(edge.target);
+  if (!sn?.internals?.handleBounds || !tn?.internals?.handleBounds) return null;
+
+  const sBounds = sn.internals.handleBounds.source || [];
+  const tBounds = tn.internals.handleBounds.target || [];
+  const sb = (edge.sourceHandle ? sBounds.find((h: any) => h.id === edge.sourceHandle) : null) ?? sBounds[0];
+  const tb = (edge.targetHandle ? tBounds.find((h: any) => h.id === edge.targetHandle) : null) ?? tBounds[0];
+  if (!sb || !tb) return null;
+
+  return {
+    sourceX: sn.internals.positionAbsolute.x + sb.x + sb.width / 2,
+    sourceY: sn.internals.positionAbsolute.y + sb.y + sb.height / 2,
+    targetX: tn.internals.positionAbsolute.x + tb.x + tb.width / 2,
+    targetY: tn.internals.positionAbsolute.y + tb.y + tb.height / 2,
+    isHorizontal: (tn.targetPosition ?? 'left') !== 'top',
+  };
 }
 
 const EPS = 0.5;

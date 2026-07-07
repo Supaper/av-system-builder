@@ -75,6 +75,12 @@ export const getDefaultPortTypeForCategory = (category: EquipmentCategory): Port
 export const PORT_ROW_HEIGHT = 24; // 포트 행 실제 높이 (EquipmentNode의 height)
 export const PORT_ROW_GAP = 4;     // 행 사이 flex gap
 export const PORT_ROW_PITCH = PORT_ROW_HEIGHT + PORT_ROW_GAP; // 행 반복 간격 (28)
+/**
+ * 노드 헤더 블록 실측 높이: 텍스트 2줄(18+15) + paddingBottom 8 + border 1 +
+ * marginBottom 12 = 54. (구버전 상수 45는 실제와 ~10px 어긋나 엣지 오프셋
+ * 정렬 판단을 흐트러뜨렸음 — 렌더링을 바꾸면 이 값도 함께 갱신할 것)
+ */
+export const NODE_HEADER_HEIGHT = 54;
 
 export const defaultCategoryImages: Record<EquipmentCategory, string> = {
   video: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 60" fill="none"><rect width="100%" height="100%" rx="4" fill="%231e293b"/><rect x="15" y="10" width="70" height="36" rx="2" fill="%230f172a" stroke="%23334155" stroke-width="1.5"/><rect x="40" y="46" width="20" height="6" fill="%23475569"/><rect x="30" y="52" width="40" height="2" fill="%2364748b"/><path d="M 25,28 L 75,28" stroke="%23ef4444" stroke-width="1" stroke-dasharray="2,4" opacity="0.5"/><polygon points="45,22 60,28 45,34" fill="%23ef4444" opacity="0.8"/></svg>',
@@ -275,7 +281,8 @@ export const calculateNodeHeight = (eq: {
     portsHeight = B * PORT_ROW_PITCH - PORT_ROW_GAP + 13;
   }
   
-  const totalHeight = 24 + 45 + (hasImage ? 68 : 0) + portsHeight + 12;
+  // paddingTop 12 + 헤더 54 + (이미지 68) + 포트 + paddingBottom 12
+  const totalHeight = 12 + NODE_HEADER_HEIGHT + (hasImage ? 68 : 0) + portsHeight + 12;
   return Math.max(100, totalHeight);
 };
 
@@ -294,7 +301,7 @@ export const getPortYOffset = (
   
   const hasImage = !!(eq.imageUrl || getDefaultEquipmentImage(eq.name, eq.category));
   const imageOffset = hasImage ? 68 : 0;
-  const headerHeight = 45;
+  const headerHeight = NODE_HEADER_HEIGHT;
   const paddingTop = 12;
   const baseOffset = paddingTop + headerHeight + imageOffset;
   const maxIO = Math.max(eq.inputs?.length || 0, eq.outputs?.length || 0);
