@@ -8,6 +8,7 @@ Format: `## [vX.Y] — YYYY-MM-DD` / Added · Changed · Fixed · Removed
 ## [v1.17] — 2026-07-06
 
 ### 참고 (데이터 정비)
+- **카탈로그 중분류 단순화** — `scripts/normalize-catalog.mjs` 신설·적용 (2026-07-06 결정 반영). ① 디스플레이: "삼성 43인치 LFD" 같은 사이즈 박힌 중분류를 `LFD`/`비디오월`로 통일하고 사이즈·스펙은 model로 이동 (TV/LFD/LED/비디오월 4종 체계, LED는 장비 등록 시 생성) ② 익스텐더: 흩어져 있던 익스텐더·송신기·수신기를 `광 익스텐더 TX/RX`, `UTP 익스텐더 TX/RX`, 세트형은 무접미 그룹으로 재분류 (총 39건) ③ 장비 DB 잔존 케이블 14건 → cableCatalog 이관 ④ 표기 통일(DSP→오디오 DSP, AMP→파워 앰프, PTZ CAM→PTZ 카메라 등) 및 video의 디스플레이류 → display 이동. 판정 불가 22건은 변경하지 않고 스크립트 리포트로 목록화 (equipment 765→750, cableCatalog 168→182)
 - **카탈로그 중복 제거** — `scripts/dedupe-catalog.mjs` 신설. name+model 기준으로 중복 판정, 포트/이미지/제조사가 많은 항목을 유지하고 부족한 필드는 병합 후 사본 삭제. 장비 20개(VS5 3중복 포함)·옵션 1개·케이블 1개 = 총 22개 정리 (장비 785→765)
 - **리팩토링 계획 수립** — src/ 전수 스캔으로 하드코딩·중복 정의 목록화, `REFACTORING_PLAN.md`에 우선순위별 계획 기록 (카테고리 8종 5중복, 포트 행 높이 28/24 이중 정의 등)
 - **리팩토링 우선순위 1 적용** — 카테고리 8종 5중복을 `CATEGORY_LABELS` 단일 소스로 통일 (모달 3곳 select + BulkImport 검증 + App.tsx 초기값·categories 배열), 포트 행 높이를 `PORT_ROW_HEIGHT/GAP/PITCH` 공유 상수로 통일 (store.ts 좌표 계산 ↔ EquipmentNode 렌더 동기화, 핸들 정렬 오차 0px 회귀 확인), `getDefaultPortTypeForCategory`를 Record 매핑으로 교체 (카테고리 추가 시 누락이 컴파일 에러로 검출)
