@@ -5,14 +5,26 @@
   width: 100vw;
 }
 
+/* 반응형 헤더 — 좁은 화면에서는 중앙 툴바가 둘째 줄로 내려가고,
+   각 그룹 내부도 줄바꿈되어 어떤 해상도에서도 버튼이 잘리지 않는다 */
 .app-header {
-  height: 50px;
-  display: grid;
-  grid-template-columns: auto 1fr auto;
+  min-height: 50px;
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  padding: 0 16px;
-  gap: 12px;
+  padding: 6px 16px;
+  gap: 6px 12px;
   z-index: 10;
+}
+
+.app-header .header-title   { order: 1; flex-shrink: 0; }
+.app-header .header-actions { order: 2; margin-left: auto; flex-wrap: wrap; row-gap: 4px; }
+.app-header .header-center  { order: 3; flex-basis: 100%; flex-wrap: wrap; row-gap: 4px; }
+
+/* 넓은 화면에서는 기존처럼 한 줄 배치 */
+@media (min-width: 1560px) {
+  .app-header .header-center  { order: 2; flex-basis: auto; flex: 1 1 auto; min-width: 0; }
+  .app-header .header-actions { order: 3; }
 }
 
 .header-title {
@@ -258,14 +270,13 @@
   flex-shrink: 0;
 }
 
-/* Header center toolbar group */
+/* Header center toolbar group — overflow 잘림 대신 줄바꿈 */
 .header-center {
   display: flex;
   align-items: center;
   gap: 4px;
   justify-content: center;
   min-width: 0;
-  overflow: hidden;
 }
 
 /* Line type filter chip */
@@ -299,4 +310,40 @@
 }
 .spin {
   animation: av-spin 0.9s linear infinite;
+}
+
+/* ── 선택 상태 시각 표시 ─────────────────────────────────────────── */
+/* 노드: 악센트 아웃라인 + 글로우 (우리 노드 루트는 .glass-panel div) */
+.react-flow__node.selected > .glass-panel,
+.react-flow__node.selected > div {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent-color) 18%, transparent),
+              0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+  border-radius: 8px;
+}
+
+/* 엣지 호버: 살짝 굵게 (선택 규칙보다 먼저 선언해 selected가 우선하도록) */
+.react-flow__edge:hover .react-flow__edge-path {
+  stroke-width: 3px !important;
+  cursor: pointer;
+}
+
+/* 엣지 선택: 굵기 확대 + 글로우 — 어느 선이 선택됐는지 즉시 식별 */
+.react-flow__edge.selected .react-flow__edge-path,
+.react-flow__edge.selected:hover .react-flow__edge-path {
+  stroke-width: 4px !important;
+  filter: drop-shadow(0 0 3px var(--accent-color)) drop-shadow(0 0 8px color-mix(in srgb, var(--accent-color) 60%, transparent));
+}
+
+/* 드롭다운 섹션 구분 제목 */
+.dropdown-section-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+  padding: 8px 10px 3px;
+  border-top: 1px solid var(--panel-border);
+  margin-top: 4px;
 }

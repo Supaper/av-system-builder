@@ -281,8 +281,7 @@ function FlowBuilder() {
   const [isPresetMenuOpen, setIsPresetMenuOpen] = useState(false);
 
   const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
-  const [isImportMenuOpen, setIsImportMenuOpen] = useState(false);
-  const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
+  const [isShareMenuOpen, setIsShareMenuOpen] = useState(false);
 
   // On mount: check if this tab was opened with a pending preset via new-tab load,
   // or with a cloud share link (?share=<id>).
@@ -338,8 +337,7 @@ function FlowBuilder() {
       const target = e.target as HTMLElement;
       if (!target.closest('.dropdown-container')) {
         setIsAddMenuOpen(false);
-        setIsImportMenuOpen(false);
-        setIsExportMenuOpen(false);
+        setIsShareMenuOpen(false);
         setIsPresetMenuOpen(false);
       }
     };
@@ -1005,23 +1003,28 @@ function FlowBuilder() {
             )}
           </div>
 
-          {/* Import Dropdown */}
+          {/* Share 통합 드롭다운 — 공유 링크 · 가져오기 · 내보내기 */}
           <div className="dropdown-container">
-            <button className="glass-button" onClick={() => setIsImportMenuOpen(!isImportMenuOpen)}>
-              <Upload size={13} /> Import <ChevronDown size={11} />
+            <button className="glass-button" onClick={() => setIsShareMenuOpen(!isShareMenuOpen)}>
+              <Share2 size={13} /> Share <ChevronDown size={11} />
             </button>
-            {isImportMenuOpen && (
-              <div className="dropdown-menu">
+            {isShareMenuOpen && (
+              <div className="dropdown-menu" style={{ minWidth: 220 }}>
+                <button className="dropdown-item" onClick={() => { setIsShareModalOpen(true); setIsShareMenuOpen(false); }}>
+                  <Share2 size={14} /> 클라우드 공유 링크 생성
+                </button>
+
+                <div className="dropdown-section-title">가져오기 (Import)</div>
                 <label className="dropdown-item" style={{ cursor: 'pointer' }}>
-                  <Upload size={14} /> Import Diagram
-                  <input type="file" accept=".json" style={{ display: 'none' }} onChange={(e) => { handleImportDiagram(e); setIsImportMenuOpen(false); }} />
+                  <Upload size={14} /> 구성도 JSON
+                  <input type="file" accept=".json" style={{ display: 'none' }} onChange={(e) => { handleImportDiagram(e); setIsShareMenuOpen(false); }} />
                 </label>
                 <label className="dropdown-item" style={{ cursor: 'pointer' }}>
-                  <Upload size={14} /> Import Equipment DB
-                  <input type="file" accept=".json" style={{ display: 'none' }} onChange={(e) => { handleImportDB(e); setIsImportMenuOpen(false); }} />
+                  <Upload size={14} /> 장비 DB
+                  <input type="file" accept=".json" style={{ display: 'none' }} onChange={(e) => { handleImportDB(e); setIsShareMenuOpen(false); }} />
                 </label>
                 <button className="dropdown-item" onClick={() => {
-                  setIsImportMenuOpen(false);
+                  setIsShareMenuOpen(false);
                   const input = document.createElement('input');
                   input.type = 'file';
                   input.accept = '.json';
@@ -1033,7 +1036,7 @@ function FlowBuilder() {
                       try {
                         const imported = JSON.parse(evt.target?.result as string);
                         if (Array.isArray(imported)) {
-                          const isValid = imported.every(p => 
+                          const isValid = imported.every(p =>
                             p && typeof p === 'object' && p.id && p.name && Array.isArray(p.nodes) && Array.isArray(p.edges)
                           );
                           if (isValid) {
@@ -1053,46 +1056,25 @@ function FlowBuilder() {
                   };
                   input.click();
                 }}>
-                  <Upload size={14} /> Import Presets File
+                  <Upload size={14} /> 프리셋 파일
+                </button>
+
+                <div className="dropdown-section-title">내보내기 (Export)</div>
+                <button className="dropdown-item" onClick={() => { handleExportDiagram(); setIsShareMenuOpen(false); }}>
+                  <Download size={14} /> 구성도 JSON
+                </button>
+                <button className="dropdown-item" onClick={() => { handleExportDB(); setIsShareMenuOpen(false); }}>
+                  <Download size={14} /> 장비 DB
+                </button>
+                <button className="dropdown-item" onClick={() => { handleExportPresets(); setIsShareMenuOpen(false); }}>
+                  <Download size={14} /> 프리셋 파일
+                </button>
+                <button className="dropdown-item" onClick={() => { handleExportPDF(); setIsShareMenuOpen(false); }}>
+                  <FileText size={14} /> PDF 문서
                 </button>
               </div>
             )}
           </div>
-
-          {/* Export Dropdown */}
-          <div className="dropdown-container">
-            <button className="glass-button" onClick={() => setIsExportMenuOpen(!isExportMenuOpen)}>
-              <Download size={13} /> Export <ChevronDown size={11} />
-            </button>
-            {isExportMenuOpen && (
-              <div className="dropdown-menu">
-                <button className="dropdown-item" onClick={() => { handleExportDiagram(); setIsExportMenuOpen(false); }}>
-                  <Download size={14} /> Export Diagram
-                </button>
-                <button className="dropdown-item" onClick={() => { handleExportDB(); setIsExportMenuOpen(false); }}>
-                  <Download size={14} /> Export Equipment DB
-                </button>
-                <button className="dropdown-item" onClick={() => { handleExportPresets(); setIsExportMenuOpen(false); }}>
-                  <Download size={14} /> Export Presets File
-                </button>
-                <div style={{ height: 1, background: 'var(--panel-border)', margin: '4px 0' }} />
-                <button className="dropdown-item" onClick={() => { handleExportPDF(); setIsExportMenuOpen(false); }}>
-                  <FileText size={14} /> Export PDF
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Share (Cloud) */}
-          <div className="control-divider" style={{ height: 18 }} />
-          <button
-            type="button"
-            className="glass-button"
-            onClick={() => setIsShareModalOpen(true)}
-            title="클라우드 공유 링크 생성"
-          >
-            <Share2 size={13} /> Share
-          </button>
 
           {/* BOM Section — always rightmost so BOM toggle never shifts when sub-buttons appear */}
           <div className="control-divider" style={{ height: 18 }} />
@@ -1301,6 +1283,7 @@ function FlowBuilder() {
             onDragOver={onDragOver}
             isValidConnection={isValidConnection}
             fitView
+            minZoom={0.05}
             deleteKeyCode={['Backspace', 'Delete']}
             defaultEdgeOptions={{ type: 'customSmoothstep' }}
             snapToGrid={snapToGrid}
