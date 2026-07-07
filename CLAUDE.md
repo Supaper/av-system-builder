@@ -161,6 +161,7 @@ interface EquipmentOption {
 - 입력: `in-{type}-{n}` (예: `in-sdi-1`)
 - 출력: `out-{type}-{n}` (예: `out-hdmi-1`)
 - 양방향: `both-{type}-{n}` → 핸들 ID는 `source_both-*`, `target_both-*`
+- 양방향 포트는 **한쪽 핸들이 연결되면 반대쪽 핸들 자동 비활성화** (물리 잭 1개 반영) — `EquipmentNode`의 `bidiSideInUse` + App.tsx `isValidConnection` 이중 방어
 
 ### 카테고리 → 사이드바 그룹핑
 - `EquipmentCategory` 8종은 사이드바 대분류 섹션 (`src/App.tsx`의 `categories` 배열)

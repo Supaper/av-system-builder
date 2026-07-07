@@ -617,7 +617,23 @@ function FlowBuilder() {
       (eqB.bidirectional && eqB.bidirectional.find(p => p.id === handleBPortId));
       
     if (!portA || !portB) return false;
-    
+
+    // 양방향 포트는 물리적으로 잭 하나 — 반대쪽 핸들이 이미 사용 중이면 연결 거부
+    // (EquipmentNode의 isConnectable 비활성화에 대한 이중 방어선)
+    const bidiOppositeInUse = (nodeId: string | null, handleId: string | null) => {
+      if (!nodeId || !handleId) return false;
+      if (handleId.startsWith('source_')) {
+        const opposite = `target_${handleId.substring(7)}`;
+        return edges.some(e => e.target === nodeId && e.targetHandle === opposite);
+      }
+      if (handleId.startsWith('target_')) {
+        const opposite = `source_${handleId.substring(7)}`;
+        return edges.some(e => e.source === nodeId && e.sourceHandle === opposite);
+      }
+      return false;
+    };
+    if (bidiOppositeInUse(source, sourceHandle) || bidiOppositeInUse(target, targetHandle)) return false;
+
     return portA.type === portB.type;
   }, [nodes, edges]);
 

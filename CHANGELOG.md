@@ -11,6 +11,7 @@ Format: `## [vX.Y] — YYYY-MM-DD` / Added · Changed · Fixed · Removed
 - **장비 라이브러리 편집 시 "동기화 오류" 발생 및 새로고침 시 롤백되던 버그** — 편집 모달이 빈 입력을 `undefined` 필드로 저장하는데 Firestore `setDoc`이 undefined 값을 거부해 쓰기가 실패하던 것이 원인. 모든 Firestore 쓰기 경로(장비·라인 타입·옵션·케이블 카탈로그)에 undefined 제거(sanitize)를 추가. 빈 값 저장(필드 지우기)까지 정상 동작 검증 완료
 
 ### Added
+- **양방향 포트 단일 연결 강제** — 양방향(bidirectional) 포트는 물리적으로 잭 하나이므로, 한쪽 핸들에 선이 연결되면 반대쪽 핸들은 자동 비활성화(흐리게 표시 + 연결 시작/수신 불가). 연결 해제 시 다시 활성화. `isValidConnection`에도 이중 방어선 추가
 - **엣지 교차 점프(hop)** — 선이 불가피하게 교차하는 지점에서 수평선이 수직선 위를 반원 아치로 넘어가 어느 선이 어디로 가는지 즉시 구분 가능. 모든 엣지가 축 정렬(H/V) 세그먼트라 교차 판정이 정확하며, 좌표는 React Flow 실측 핸들 좌표(`getInternalNode`) 사용. 라인 타입 필터로 숨긴 선과는 점프하지 않음
 - 엣지 지오메트리 공유 유틸(`src/utils/edgeGeometry.ts`) — 경로 지점 계산을 렌더러(CustomSmoothstepEdge)와 교차 계산(edgeProcessing)이 공유하도록 일원화
 - **세로 통로 전역 충돌 해소(Stage 4)** — 서로 다른 연결 그룹의 세로선이 같은 X에 포개지는 문제를 스윕으로 해소, 다열을 건너는 선의 세로 구간은 출발 열 근처로 제한해 중간 열 노드 관통 방지
