@@ -58,6 +58,51 @@ function edgesConflict(infoI: EdgeEndpoints, infoJ: EdgeEndpoints): boolean {
 
 const SPACING = 20;
 
+/** 양쪽 끝이 모두 양방향(bidi) 핸들인 엣지인가 — bidi 핸들만 source_/target_ 접두를 가진다 */
+export function isBidiBidiEdge(edge: Edge): boolean {
+  return !!edge.sourceHandle?.startsWith('source_') && !!edge.targetHandle?.startsWith('target_');
+}
+
+/** 노드 가로 중심 좌표 */
+function nodeCenterX(node: Node): number {
+  const w = (node as any).measured?.width ?? (node as any).width ?? 200;
+  return node.position.x + w / 2;
+}
+
+/**
+ * 양방향↔양방향 엣지의 렌더 방향 결정: 왼쪽 노드에서 나가 오른쪽 노드로
+ * 들어가도록 뒤집을지 여부. (bidi 포트는 방향 개념이 없으므로 저장된
+ * source/target은 연결 당시의 드래그 방향일 뿐이다)
+ */
+export function shouldFlipBidiEdge(edge: Edge, nodeMap: Record<string, Node>): boolean {
+  if (!isBidiBidiEdge(edge)) return false;
+  const s = nodeMap[edge.source];
+  const t = nodeMap[edge.target];
+  if (!s || !t) return false;
+  return nodeCenterX(s) > nodeCenterX(t);
+}
+
+/**
+ * 양방향↔양방향 엣지를 노드 상대 위치에 맞게 정방향(좌→우)으로 정규화.
+ * 저장 데이터는 건드리지 않는 렌더 전용 변환 — 노드를 드래그해 좌우가
+ * 바뀌면 다음 렌더에서 즉시 반대쪽 핸들로 붙는다.
+ */
+export function normalizeBidiEdges(edges: Edge[], nodes: Node[]): Edge[] {
+  const nodeMap: Record<string, Node> = {};
+  nodes.forEach(n => { nodeMap[n.id] = n; });
+
+  return edges.map(edge => {
+    if (!shouldFlipBidiEdge(edge, nodeMap)) return edge;
+    return {
+      ...edge,
+      source: edge.target,
+      target: edge.source,
+      sourceHandle: `source_${edge.targetHandle!.substring(7)}`,
+      targetHandle: `target_${edge.sourceHandle!.substring(7)}`,
+    };
+  });
+}
+
 /**
  * Assigns splitOffset values to edges so that parallel edges don't overlap
  * and, where possible, don't cross each other.

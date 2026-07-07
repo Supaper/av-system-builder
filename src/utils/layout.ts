@@ -116,51 +116,93 @@ export function getLayoutedElements(nodes: Node[], edges: Edge[], direction = 'L
     else columns.push([node]);
   });
 
-  // Build incoming-edge index for barycenter computation
-  const incomingMap = new Map<string, Array<{ sourceId: string; sourceHandle: string | undefined }>>();
+  // Barycenter 계산용 인덱스: 들어오는 엣지(소스 포트 기준)와
+  // 나가는 엣지(타겟 포트 기준) 양쪽 모두
+  // 신호 엣지(SDI/HDMI/오디오/USB)는 배치를 지배하고, 네트워크/컨트롤은 보조 —
+  // 랭크 결정과 같은 철학. LAN 스위치 포트 순서는 임의이므로 신호 순서가 우선이다.
+  const barycenterWeight = (e: Edge) =>
+    SIGNAL_EDGE_TYPES.has(((e.data as any)?.lineTypeId ?? '') as string) ? 3 : 1;
+
+  const incomingMap = new Map<string, Array<{ sourceId: string; sourceHandle: string | undefined; w: number }>>();
+  const outgoingMap = new Map<string, Array<{ targetId: string; targetHandle: string | undefined; w: number }>>();
   edges.forEach(e => {
     if (!eqIds.has(e.source) || !eqIds.has(e.target)) return;
+    const w = barycenterWeight(e);
     if (!incomingMap.has(e.target)) incomingMap.set(e.target, []);
-    incomingMap.get(e.target)!.push({ sourceId: e.source, sourceHandle: e.sourceHandle ?? undefined });
+    incomingMap.get(e.target)!.push({ sourceId: e.source, sourceHandle: e.sourceHandle ?? undefined, w });
+    if (!outgoingMap.has(e.source)) outgoingMap.set(e.source, []);
+    outgoingMap.get(e.source)!.push({ targetId: e.target, targetHandle: e.targetHandle ?? undefined, w });
   });
 
-  // Sort columns left-to-right and run barycenter sweep (skip first column)
+  // Sort columns left-to-right
   const sortedCols = [...columns].sort((a, b) => {
     const ax = a.reduce((s, n) => s + n.position.x, 0) / a.length;
     const bx = b.reduce((s, n) => s + n.position.x, 0) / b.length;
     return ax - bx;
   });
 
-  sortedCols.forEach((col, ci) => {
-    if (ci === 0 || col.length < 2) return;
-
+  /**
+   * 한 열의 노드들을 barycenter 순으로 재배치.
+   * 'incoming': 왼쪽 이웃들의 소스 포트 Y 평균 (L→R 스윕)
+   * 'outgoing': 오른쪽 이웃들의 "타겟 포트 Y" 평균 (R→L 스윕)
+   *   → 장비 3대가 한 장비의 In 1/2/3에 꽂히면 소스 노드들이
+   *     입력 포트 순번대로 위→아래 정렬되어 선이 곧게 펴진다.
+   */
+  const reorderColumn = (col: Node[], direction: 'incoming' | 'outgoing') => {
+    if (col.length < 2) return;
     const colAvgX = col.reduce((s, n) => s + n.position.x, 0) / col.length;
 
     const barycenters = col.map(node => {
-      const incoming = (incomingMap.get(node.id) ?? []).filter(e => {
-        // Only consider sources to the LEFT of this column
-        const src = nodeMap[e.sourceId];
-        return src && src.position.x < colAvgX - colThreshold / 2;
-      });
-      if (incoming.length === 0) return node.position.y;
-      const sum = incoming.reduce((s, e) => {
-        const src = nodeMap[e.sourceId];
-        if (!src) return s;
-        return s + src.position.y + getPortYOffset(src.data as any, e.sourceHandle);
-      }, 0);
-      return sum / incoming.length;
+      if (direction === 'incoming') {
+        const incoming = (incomingMap.get(node.id) ?? []).filter(e => {
+          const src = nodeMap[e.sourceId];
+          return src && src.position.x < colAvgX - colThreshold / 2; // 왼쪽 이웃만
+        });
+        if (incoming.length === 0) return node.position.y;
+        let wSum = 0;
+        const sum = incoming.reduce((s, e) => {
+          const src = nodeMap[e.sourceId];
+          if (!src) return s;
+          wSum += e.w;
+          return s + e.w * (src.position.y + getPortYOffset(src.data as any, e.sourceHandle));
+        }, 0);
+        return wSum > 0 ? sum / wSum : node.position.y;
+      } else {
+        const outgoing = (outgoingMap.get(node.id) ?? []).filter(e => {
+          const tgt = nodeMap[e.targetId];
+          return tgt && tgt.position.x > colAvgX + colThreshold / 2; // 오른쪽 이웃만
+        });
+        if (outgoing.length === 0) return node.position.y;
+        let wSum = 0;
+        const sum = outgoing.reduce((s, e) => {
+          const tgt = nodeMap[e.targetId];
+          if (!tgt) return s;
+          wSum += e.w;
+          return s + e.w * (tgt.position.y + getPortYOffset(tgt.data as any, e.targetHandle));
+        }, 0);
+        return wSum > 0 ? sum / wSum : node.position.y;
+      }
     });
 
-    // Sort current Y positions and assign them to barycenter-sorted nodes
     const sortedYs = col.map(n => n.position.y).sort((a, b) => a - b);
-    const sortedByBarycenter = col
+    col
       .map((node, i) => ({ node, barycenter: barycenters[i] }))
-      .sort((a, b) => a.barycenter - b.barycenter);
+      .sort((a, b) => a.barycenter - b.barycenter)
+      .forEach(({ node }, i) => {
+        node.position.y = sortedYs[i];
+      });
+  };
 
-    sortedByBarycenter.forEach(({ node }, i) => {
-      node.position.y = sortedYs[i];
+  // Sugiyama식 교대 스윕 2회: L→R(들어오는 선 기준) → R→L(나가는 선의 타겟 포트 순번 기준)
+  for (let iter = 0; iter < 2; iter++) {
+    sortedCols.forEach((col, ci) => {
+      if (ci === 0) return; // 첫 열은 왼쪽 이웃이 없음
+      reorderColumn(col, 'incoming');
     });
-  });
+    for (let ci = sortedCols.length - 2; ci >= 0; ci--) {
+      reorderColumn(sortedCols[ci], 'outgoing');
+    }
+  }
 
   // Enforce minimum vertical gaps within each column (top-to-bottom)
   columns.forEach(columnNodes => {

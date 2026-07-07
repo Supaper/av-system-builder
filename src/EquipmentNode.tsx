@@ -3,6 +3,7 @@ import { Handle, Position, useStore as useRFStore } from '@xyflow/react';
 import type { NodeProps, Node } from '@xyflow/react';
 import { Video, Mic, Cpu, Network, Monitor, Users, Radio, MoreHorizontal } from 'lucide-react';
 import { useStore, getDefaultEquipmentImage, calculateNodeHeight, PORT_ROW_HEIGHT, PORT_ROW_GAP } from './store';
+import { normalizeBidiEdges } from './utils/edgeProcessing';
 import type { Equipment, EquipmentCategory } from './store';
 
 type EquipmentNodeData = Equipment & { dimmed?: boolean };
@@ -40,7 +41,7 @@ const iconMap: Record<string, React.ReactElement> = {
   etc: <MoreHorizontal size={14} />,
 };
 
-export function EquipmentNode({ data }: NodeProps<EquipmentNodeType>) {
+export function EquipmentNode({ id: nodeId, data }: NodeProps<EquipmentNodeType>) {
   const isDimmed = data.dimmed ?? false;
   const isReused = data.isReused;
 
@@ -49,8 +50,19 @@ export function EquipmentNode({ data }: NodeProps<EquipmentNodeType>) {
 
   // 포트 색상은 라인 타입(케이블 타입) 색상과 항상 일치해야 한다 — 동적 조회
   const lineTypes = useStore(state => state.lineTypes);
+  const edges = useStore(state => state.edges);
+  const allNodes = useStore(state => state.nodes);
   const portColor = (type: string) =>
     lineTypes.find(lt => lt.id === type)?.color || fallbackPortColors[type] || '#fff';
+
+  // 양방향 포트는 물리적으로 잭 하나 — 한쪽 핸들이 사용 중이면 반대쪽을 비활성화.
+  // 판정은 저장 방향이 아니라 "렌더 방향"(normalizeBidiEdges 후) 기준 —
+  // 노드를 드래그해 좌우가 바뀌면 사용/비활성 핸들도 함께 전환된다.
+  const renderedEdges = normalizeBidiEdges(edges, allNodes);
+  const bidiSideInUse = (portId: string) => ({
+    asSource: renderedEdges.some(e => e.source === nodeId && e.sourceHandle === `source_${portId}`),
+    asTarget: renderedEdges.some(e => e.target === nodeId && e.targetHandle === `target_${portId}`),
+  });
 
   const bgColor = categoryColors[data.category] || '#666';
   const displayImageUrl = data.imageUrl || getDefaultEquipmentImage(data.name, data.category);
@@ -95,10 +107,23 @@ export function EquipmentNode({ data }: NodeProps<EquipmentNodeType>) {
 
   const bidiHandles = (data.bidirectional || []).map((port) => {
     const c = portColor(port.type);
+    const inUse = bidiSideInUse(port.id);
+    // 반대쪽이 사용 중이면 이쪽 핸들 비활성화 (연결 시작/수신 모두 불가)
+    const targetDisabled = inUse.asSource;
+    const sourceDisabled = inUse.asTarget;
+    const handleStyle = (disabled: boolean, side: 'left' | 'right') => ({
+      background: disabled ? 'var(--text-secondary)' : c,
+      width: 8, height: 8,
+      [side]: -16,
+      border: '1.5px solid var(--handle-border)',
+      opacity: disabled ? 0.3 : 1,
+      cursor: disabled ? 'not-allowed' : undefined,
+    });
     return (
       <div key={port.id} style={{ position: 'relative', height: PORT_ROW_HEIGHT, display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
         <Handle type="target" position={Position.Left} id={`target_${port.id}`}
-          style={{ background: c, width: 8, height: 8, left: -16, border: '1.5px solid var(--handle-border)' }} />
+          isConnectable={!targetDisabled}
+          style={handleStyle(targetDisabled, 'left')} />
         <span style={{
           fontSize: 10, color: 'var(--text-primary)', background: 'rgba(255,255,255,0.04)',
           padding: '2px 8px', borderRadius: 4, border: `1px solid ${c}44`,
@@ -107,7 +132,8 @@ export function EquipmentNode({ data }: NodeProps<EquipmentNodeType>) {
           <span style={{ color: c }}>↔</span> {port.label}
         </span>
         <Handle type="source" position={Position.Right} id={`source_${port.id}`}
-          style={{ background: c, width: 8, height: 8, right: -16, border: '1.5px solid var(--handle-border)' }} />
+          isConnectable={!sourceDisabled}
+          style={handleStyle(sourceDisabled, 'right')} />
       </div>
     );
   });
