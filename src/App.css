@@ -313,12 +313,14 @@
 }
 
 /* ── 선택 상태 시각 표시 ─────────────────────────────────────────── */
-/* 노드: 악센트 아웃라인 + 글로우 (우리 노드 루트는 .glass-panel div) */
+/* 색이 아니라 "점선 아웃라인 + 무채색 할로" 패턴으로 표시 — 파란색(악센트)은
+   HDMI/USB 계열, 회색은 SDI 케이블색과 겹치므로 케이블 팔레트와 충돌하지 않는
+   테마 중립색(--text-primary: 다크=흰색, 라이트=검정)을 사용한다 */
 .react-flow__node.selected > .glass-panel,
 .react-flow__node.selected > div {
-  outline: 2px solid var(--accent-color);
+  outline: 2px dashed var(--text-primary);
   outline-offset: 3px;
-  box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent-color) 18%, transparent),
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--text-primary) 14%, transparent),
               0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
   border-radius: 8px;
 }
@@ -329,11 +331,11 @@
   cursor: pointer;
 }
 
-/* 엣지 선택: 굵기 확대 + 글로우 — 어느 선이 선택됐는지 즉시 식별 */
+/* 엣지 선택: 선 색은 유지한 채 굵기 확대 + 무채색 할로(후광)로 식별 */
 .react-flow__edge.selected .react-flow__edge-path,
 .react-flow__edge.selected:hover .react-flow__edge-path {
   stroke-width: 4px !important;
-  filter: drop-shadow(0 0 3px var(--accent-color)) drop-shadow(0 0 8px color-mix(in srgb, var(--accent-color) 60%, transparent));
+  filter: drop-shadow(0 0 2px var(--text-primary)) drop-shadow(0 0 7px color-mix(in srgb, var(--text-primary) 55%, transparent));
 }
 
 /* 드롭다운 섹션 구분 제목 */
