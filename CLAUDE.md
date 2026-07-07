@@ -221,6 +221,7 @@ interface EquipmentOption {
 - **반응형 헤더** — `.app-header` flex-wrap 기반. 좁은 화면에서 중앙 툴바가 둘째 줄로 내려감 (1560px 미디어쿼리로 넓은 화면은 한 줄 유지). 어떤 해상도에서도 버튼 잘림 없음
 - **깊은 줌아웃 + 라벨 역스케일** — `minZoom={0.05}`. LOD 오버레이 캡 44/26px, 엣지 라벨 `labelScale = min(3.2, max(1, 0.85/zoom))` (`CustomSmoothstepEdge.tsx`)
 - **노드/엣지 선택 시각 표시** — 선택 노드는 악센트 아웃라인+글로우, 선택 엣지는 4px+글로우, 엣지 호버 3px (App.css — ⚠️ 호버 규칙을 selected 규칙보다 먼저 선언해야 selected가 이김)
+- **빠른제작 (Quick Build)** — 슬롯 기반 템플릿 → 3단계 위저드(`QuickBuildModal`) → 자동 배선(`utils/quickBuild.ts`). 기본 템플릿 3종(`quickBuildTemplates.ts` — 소형 회의실/교육장/강당, 코드 상수). 슬롯은 중분류(`targetName`=`Equipment.name`) 우선 매칭 + 카테고리 폴백(`getCandidatesForSlot`), 연결은 동적 라인 타입 id 사용. 슬롯 기본 장비는 포트 적합도 스코어링(`pickBestCandidate`)으로 자동 선택 — 카탈로그에 포트 미입력 장비가 많아 필수. 배선은 one-to-one/fan-out/fan-in + 양방향 단일 잭 규칙 준수, 부족분은 경고 후 스킵(80% 골격 원칙). 생성 시 서브그래프만 `getLayoutedElements`로 레이아웃 후 추가(add)/교체(replace). 사용자 템플릿은 `quickTemplates` 컬렉션 동기화 준비 완료 (편집 UI는 Backlog)
 
 ---
 
@@ -228,9 +229,9 @@ interface EquipmentOption {
 
 **핵심 원칙 (v1.10 정규화 이후):** 캔버스 노드는 배치 시점의 장비 정보를 통째로 품고(`data: {...equipment}`), 엣지는 생성 시점의 색상을 직접 품는다(`style.stroke`). 즉 노드/엣지는 카탈로그 없이도 항상 정상 렌더링되는 자기완결적 데이터다. 그래서 카탈로그(장비 DB·라인 타입)는 정규화된 전용 컬렉션에만 두고, 프리셋·공유 링크는 카탈로그를 중복 저장하지 않는다.
 
-### 1) 카탈로그 (실시간, 정규화) — `equipment` / `lineTypes` / `equipmentOptions` / `cableCatalog` 컬렉션
-- **대상:** 장비 DB · 라인 타입 · 장비 옵션 · 기성케이블 카탈로그 (사용자가 추가/수정한 값)
-- **저장 구조:** 항목 1개 = 문서 1개 — `equipment/{equipmentId}`, `lineTypes/{lineTypeId}`, `equipmentOptions/{optionId}`, `cableCatalog/{cableId}` (네이티브 필드, JSON 문자열 아님)
+### 1) 카탈로그 (실시간, 정규화) — `equipment` / `lineTypes` / `equipmentOptions` / `cableCatalog` / `quickTemplates` 컬렉션
+- **대상:** 장비 DB · 라인 타입 · 장비 옵션 · 기성케이블 카탈로그 · 사용자 정의 빠른제작 템플릿 (사용자가 추가/수정한 값)
+- **저장 구조:** 항목 1개 = 문서 1개 — `equipment/{equipmentId}`, `lineTypes/{lineTypeId}`, `equipmentOptions/{optionId}`, `cableCatalog/{cableId}`, `quickTemplates/{templateId}` (네이티브 필드, JSON 문자열 아님). 기본 제공 템플릿 3종은 코드 상수라 Firestore에 저장하지 않음
 - **동작 (`librarySync.ts`):** 앱 마운트 시 `startLibrarySync()` 1회 호출 → 컬렉션 단위 `onSnapshot` 으로 원격→로컬 실시간 반영, `useStore.subscribe` 에서 변경 전/후 배열을 diff해 **바뀐 문서만** 개별 `setDoc`/`deleteDoc` (배열 전체를 통째로 재직렬화하지 않음)
 - **무한 루프 방지:** 원격 반영 중에는 `applyingRemote` 플래그로 push 스킵
 - **최초 시드:** 클라우드가 비어 있으면 현재 로컬 값 업로드, 이후 클라우드가 소스 오브 트루스
@@ -264,10 +265,11 @@ service cloud.firestore {
     match /workspace/{docId} { allow read, write: if true; } // 마이그레이션 검증 끝나면 삭제 가능 (아래 참고)
     match /equipmentOptions/{docId} { allow read, write: if true; }
     match /cableCatalog/{docId}     { allow read, write: if true; }
+    match /quickTemplates/{docId}   { allow read, write: if true; }
   }
 }
 ```
-> `equipmentOptions`/`cableCatalog`는 2026-07-03 추가된 컬렉션 — Firebase 콘솔에서 규칙을 수동으로 갱신해야 동기화가 동작한다 (이 저장소에는 `firebase.json`/`firestore.rules`가 없어 콘솔에서 직접 게시하는 방식).
+> `equipmentOptions`/`cableCatalog`는 2026-07-03, `quickTemplates`는 2026-07-07 추가된 컬렉션 — Firebase 콘솔에서 규칙을 수동으로 갱신해야 동기화가 동작한다 (이 저장소에는 `firebase.json`/`firestore.rules`가 없어 콘솔에서 직접 게시하는 방식). 규칙 미게시 시 해당 컬렉션 동기화만 콘솔 에러로 조용히 실패하고 앱 동작에는 영향 없음.
 
 ### 레거시 구조 마이그레이션 (v1.10)
 - v1.9까지는 장비 DB·라인 타입이 `workspace/library` 문서 1개에 JSON 문자열로 통째로 저장되고, 프리셋·공유 링크도 카탈로그 전체를 매번 복제해 저장했다
@@ -305,6 +307,8 @@ service cloud.firestore {
 2. **마이크 커버리지 시뮬레이션** — Shure MXA925 등 수음 범위 오버레이 위젯
 3. **글로벌 벤더 카탈로그 연동** — Shure, Crestron, Extron 등 벤더 장비 DB 임포트 (사용자 장비 DB 클라우드 동기화는 v1.8에서 완료, 자체 정리 카탈로그 일괄 반영은 2026-07-03 완료 — 남은 건 해외 벤더 카탈로그 자동 연동)
 4. **BOM 케이블 카탈로그 관리 UI** — `cableCatalog` 컬렉션은 현재 시드 스크립트로만 채워짐. 팀이 직접 카탈로그 항목을 추가·수정할 수 있는 화면 필요 (장비 DB의 `AddEquipmentModal`에 대응하는 것이 아직 없음)
+5. **빠른제작 확장 (Phase 3·4)** — ① 템플릿 편집기 UI (슬롯/연결 폼 편집 — 데이터 계층·`quickTemplates` 동기화는 v1.19에서 완료) ② 캔버스→템플릿 역변환 (기존 도면의 장비를 중분류로 추상화 + 동일 패턴 병합). 기획 원문은 `빠른제작_기능_기획안.md`(Downloads) 참고
+6. **카탈로그 포트 정보 보완** — 빠른제작 자동 배선의 성공률은 카탈로그 포트 입력률에 비례. 프로젝터(0/31)·LFD(0/15)·파워 앰프(1/47) 등 포트 미입력 그룹을 채우면 기본 템플릿 배선이 완성됨 (2026-07-07 전수 확인 기준)
 
 ---
 

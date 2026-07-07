@@ -5,6 +5,20 @@ Format: `## [vX.Y] — YYYY-MM-DD` / Added · Changed · Fixed · Removed
 
 ---
 
+## [v1.19] — 2026-07-07
+
+### Added
+- **빠른제작 (Quick Build)** — 슬롯 기반 템플릿으로 시스템 구성을 자동 생성. 상단바 `⚡ 빠른제작` 버튼 → 3단계 위저드 (템플릿 선택 → 슬롯별 장비 대입 → 확인/생성)
+  - 기본 제공 템플릿 3종: 소형 회의실 · 교육장 · 강당 (`src/quickBuildTemplates.ts`)
+  - 템플릿 슬롯은 중분류(`name`) 우선 매칭, 매칭 0개면 카테고리 폴백 (`getCandidatesForSlot`)
+  - 자동 배선 엔진 (`src/utils/quickBuild.ts`): 라인 타입 일치 포트를 위에서부터 순차 할당, one-to-one / fan-out / fan-in 3가지 분배 방식, 양방향 포트 단일 잭 규칙(`source_both-*`/`target_both-*` 핸들) 준수
+  - 슬롯 기본 장비는 **포트 적합도 기반 자동 선택** — 연결 정의가 요구하는 방향·타입의 포트를 실제로 가진 장비를 우선 (포트 미입력 장비가 많은 카탈로그에서 배선 성공률 확보)
+  - 포트 부족·빈 슬롯은 가능한 만큼만 연결하고 경고로 안내 (Step 2/3에 실시간 표시), 생성 후 서브그래프만 오토레이아웃
+  - 생성 옵션 2종: 현재 캔버스 오른쪽에 추가 / 새 캔버스로 교체 (Ctrl+Z 복구 가능), Diagram Lock 중 버튼 비활성화
+  - 사용자 정의 템플릿 저장소 준비: Firestore `quickTemplates` 컬렉션 실시간 동기화 + LocalStorage (편집 UI는 Backlog — 현재는 기본 3종 사용)
+
+---
+
 ## [v1.18] — 2026-07-07
 
 ### Fixed

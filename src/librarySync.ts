@@ -13,7 +13,7 @@
 // 마지막 저장이 이김(last-write-wins). 완전한 동시 편집은 Backlog "실시간 협업".
 // ───────────────────────────────────────────────────────────────────────────
 import { useStore } from './store';
-import type { CableCatalogItem, DiagramPreset, Equipment, EquipmentOption, LineType } from './store';
+import type { CableCatalogItem, DiagramPreset, Equipment, EquipmentOption, LineType, QuickBuildTemplate } from './store';
 import { isFirebaseConfigured } from './firebaseConfig';
 import { getFirestoreDb, byteSize, MAX_DOC_BYTES } from './cloud';
 
@@ -136,6 +136,30 @@ export async function startLibrarySync(onStatus?: (s: SyncStatus) => void): Prom
       (err) => console.error('케이블 카탈로그 동기화 오류', err)
     );
 
+    // ─── 빠른제작 템플릿 (quickTemplates 컬렉션) ─────────────────────────────
+    // 기본 제공 3종은 코드 상수라 여기 포함되지 않음 — 사용자 정의 템플릿만 동기화
+    const quickTemplatesCol = collection(db, 'quickTemplates');
+    let quickTemplatesSeeded = false;
+
+    onSnapshot(
+      quickTemplatesCol,
+      (snap) => {
+        if (snap.empty && !quickTemplatesSeeded) {
+          quickTemplatesSeeded = true;
+          const { quickTemplates } = useStore.getState();
+          quickTemplates.forEach((tpl) => void writeQuickTemplateItem(tpl));
+          return;
+        }
+        quickTemplatesSeeded = true;
+        const remote: QuickBuildTemplate[] = [];
+        snap.forEach((d) => remote.push({ id: d.id, ...(d.data() as object) } as QuickBuildTemplate));
+        applyingRemote = true;
+        useStore.setState({ quickTemplates: remote });
+        applyingRemote = false;
+      },
+      (err) => console.error('빠른제작 템플릿 동기화 오류', err)
+    );
+
     // ─── 프리셋 (presets 컬렉션) ────────────────────────────────────────────
     const presetsCol = collection(db, 'presets');
     let presetsSeeded = false;
@@ -185,6 +209,10 @@ export async function startLibrarySync(onStatus?: (s: SyncStatus) => void): Prom
 
       if (state.cableCatalog !== prev.cableCatalog) {
         void diffAndPushCableCatalog(prev.cableCatalog, state.cableCatalog);
+      }
+
+      if (state.quickTemplates !== prev.quickTemplates) {
+        void diffAndPushQuickTemplates(prev.quickTemplates, state.quickTemplates);
       }
 
       if (state.presets !== prev.presets) {
@@ -354,6 +382,40 @@ async function diffAndPushCableCatalog(prev: CableCatalogItem[], next: CableCata
     }
   } catch (e) {
     console.error('케이블 카탈로그 동기화 실패', e);
+  }
+}
+
+async function writeQuickTemplateItem(tpl: QuickBuildTemplate): Promise<void> {
+  try {
+    const db = await getFirestoreDb();
+    const { doc, setDoc } = await import('firebase/firestore');
+    const { id, ...fields } = tpl;
+    await setDoc(doc(db, 'quickTemplates', id), sanitizeForFirestore(fields).payload);
+  } catch (e) {
+    console.error('빠른제작 템플릿 저장 실패', tpl.id, e);
+  }
+}
+
+async function diffAndPushQuickTemplates(prev: QuickBuildTemplate[], next: QuickBuildTemplate[]): Promise<void> {
+  try {
+    const db = await getFirestoreDb();
+    const { doc, deleteDoc } = await import('firebase/firestore');
+    const prevById = new Map(prev.map((t) => [t.id, t]));
+    const nextIds = new Set(next.map((t) => t.id));
+
+    for (const tpl of next) {
+      const old = prevById.get(tpl.id);
+      if (!old || JSON.stringify(old) !== JSON.stringify(tpl)) {
+        await writeQuickTemplateItem(tpl);
+      }
+    }
+    for (const tpl of prev) {
+      if (!nextIds.has(tpl.id)) {
+        await deleteDoc(doc(db, 'quickTemplates', tpl.id));
+      }
+    }
+  } catch (e) {
+    console.error('빠른제작 템플릿 동기화 실패', e);
   }
 }
 

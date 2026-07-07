@@ -8,7 +8,7 @@ import {
 } from '@xyflow/react';
 import type { Node, Edge } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { Plus, Minus, Maximize, Download, Upload, FileText, LayoutTemplate, Settings, Video, Mic, Cpu, Network, Monitor, Users, Radio, MoreHorizontal, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, FolderOpen, Save, Trash2, Grid, Map, Lock, Unlock, Undo2, Redo2, ClipboardList, Share2, Cloud, CloudOff, Search, X, Sun, Moon, Factory, LayoutGrid } from 'lucide-react';
+import { Plus, Minus, Maximize, Download, Upload, FileText, LayoutTemplate, Settings, Video, Mic, Cpu, Network, Monitor, Users, Radio, MoreHorizontal, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, FolderOpen, Save, Trash2, Grid, Map, Lock, Unlock, Undo2, Redo2, ClipboardList, Share2, Cloud, CloudOff, Search, X, Sun, Moon, Factory, LayoutGrid, Zap } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import jsPDF from 'jspdf';
@@ -34,6 +34,8 @@ import { BomEdgeModal } from './BomEdgeModal';
 import { BomReportModal } from './BomReportModal';
 import { LoadPresetModal } from './LoadPresetModal';
 import { ShareModal } from './ShareModal';
+import { QuickBuildModal } from './QuickBuildModal';
+import type { QuickBuildResult } from './utils/quickBuild';
 import { loadSharedDiagram } from './cloud';
 import { startLibrarySync, type SyncStatus } from './librarySync';
 import { isFirebaseConfigured } from './firebaseConfig';
@@ -243,6 +245,7 @@ function FlowBuilder() {
   const [editingLineType, setEditingLineType] = useState<any>(null);
   const [isBulkImportModalOpen, setIsBulkImportModalOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [isQuickBuildOpen, setIsQuickBuildOpen] = useState(false);
   const [shareLoadState, setShareLoadState] = useState<'idle' | 'loading' | 'error'>('idle');
   const [syncStatus, setSyncStatus] = useState<SyncStatus>(isFirebaseConfigured ? 'connecting' : 'off');
 
@@ -574,6 +577,28 @@ function FlowBuilder() {
       fitView();
     });
   }, [nodes, edges, setNodes, setEdges, fitView, saveToHistory]);
+
+  // 빠른제작 결과 반영 — 생성된 서브그래프만 먼저 오토레이아웃한 뒤 캔버스에 배치
+  const handleQuickBuildCreate = useCallback((result: QuickBuildResult, mode: 'add' | 'replace') => {
+    saveToHistory();
+    const { nodes: builtNodes, edges: builtEdges } = getLayoutedElements(result.nodes, result.edges);
+
+    if (mode === 'replace') {
+      setNodes([...builtNodes]);
+      setEdges([...builtEdges]);
+    } else {
+      // 기존 내용 오른쪽 빈 영역에 평행이동 배치 (addPresetToCanvas와 동일 정책)
+      const maxX = nodes.length > 0 ? Math.max(...nodes.map(n => (n.position?.x ?? 0) + 260)) : 0;
+      const minBuiltX = builtNodes.length > 0 ? Math.min(...builtNodes.map(n => n.position.x)) : 0;
+      const shifted = builtNodes.map(n => ({
+        ...n,
+        position: { x: n.position.x + maxX + 80 - minBuiltX, y: n.position.y },
+      }));
+      setNodes([...nodes, ...shifted]);
+      setEdges([...edges, ...builtEdges]);
+    }
+    window.requestAnimationFrame(() => { fitView(); });
+  }, [nodes, edges, setNodes, setEdges, saveToHistory, fitView]);
 
   const toggleCategory = (cat: string) => {
     setOpenCategories(prev => ({ ...prev, [cat]: !prev[cat] }));
@@ -1003,6 +1028,16 @@ function FlowBuilder() {
             )}
           </div>
 
+          {/* 빠른제작 — 템플릿 기반 시스템 자동 구성 (Lock 중 비활성) */}
+          <button
+            className="glass-button"
+            onClick={() => setIsQuickBuildOpen(true)}
+            disabled={isDiagramLocked}
+            title={isDiagramLocked ? 'Diagram Lock 해제 후 사용 가능' : '템플릿으로 시스템 자동 구성'}
+          >
+            <Zap size={13} /> 빠른제작
+          </button>
+
           {/* Share 통합 드롭다운 — 공유 링크 · 가져오기 · 내보내기 */}
           <div className="dropdown-container">
             <button className="glass-button" onClick={() => setIsShareMenuOpen(!isShareMenuOpen)}>
@@ -1400,6 +1435,12 @@ function FlowBuilder() {
         <ShareModal
           getDiagram={() => ({ nodes, edges })}
           onClose={() => setIsShareModalOpen(false)}
+        />
+      )}
+      {isQuickBuildOpen && (
+        <QuickBuildModal
+          onClose={() => setIsQuickBuildOpen(false)}
+          onCreate={handleQuickBuildCreate}
         />
       )}
 
