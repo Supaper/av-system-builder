@@ -3,10 +3,9 @@
 // 템플릿의 슬롯에 실제 장비를 대입하면 buildFromTemplate이 노드/엣지를 생성한다.
 // ───────────────────────────────────────────────────────────────────────────
 import { useMemo, useState } from 'react';
-import { Zap, ChevronLeft, ChevronRight, AlertTriangle, Layers, PlusSquare, Minus, Plus, Pencil, Trash2, Copy } from 'lucide-react';
+import { Zap, ChevronLeft, ChevronRight, AlertTriangle, Layers, PlusSquare, Minus, Plus, Pencil, Trash2 } from 'lucide-react';
 import { useStore, getCandidatesForSlot, CATEGORY_LABELS } from './store';
 import type { QuickBuildTemplate } from './store';
-import { builtInTemplates } from './quickBuildTemplates';
 import { buildFromTemplate, pickBestCandidate } from './utils/quickBuild';
 import type { QuickBuildResult, SlotAssignment } from './utils/quickBuild';
 import { TemplateEditorModal } from './TemplateEditorModal';
@@ -20,12 +19,8 @@ interface Props {
 export function QuickBuildModal({ onClose, onCreate }: Props) {
   const equipmentDB = useStore(s => s.equipmentDB);
   const lineTypes = useStore(s => s.lineTypes);
-  const quickTemplates = useStore(s => s.quickTemplates);
-
-  const templates = useMemo(
-    () => [...builtInTemplates, ...quickTemplates],
-    [quickTemplates]
-  );
+  // 템플릿은 전부 사용자 정의 (기본 제공 개념 없음 — Firestore quickTemplates 동기화)
+  const templates = useStore(s => s.quickTemplates);
 
   const removeQuickTemplate = useStore(s => s.removeQuickTemplate);
 
@@ -86,34 +81,30 @@ export function QuickBuildModal({ onClose, onCreate }: Props) {
                 >
                   <Zap size={16} style={{ flexShrink: 0, color: 'var(--accent-color)' }} />
                   <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 12, fontWeight: 600 }}>
-                      {tpl.name}
-                      {tpl.isBuiltIn && <span style={{ fontSize: 9, color: 'var(--text-secondary)', marginLeft: 6 }}>기본 제공</span>}
-                    </div>
+                    <div style={{ fontSize: 12, fontWeight: 600 }}>{tpl.name}</div>
                     <div style={{ fontSize: 10, color: 'var(--text-secondary)', marginTop: 2 }}>
                       {tpl.description || `슬롯 ${tpl.slots.length}개 · 연결 ${tpl.connections.length}개`}
                     </div>
                   </div>
                 </button>
-                {tpl.isBuiltIn ? (
-                  <button className="glass-button icon-btn" style={{ width: 32, flexShrink: 0 }} title="사본을 만들어 내 템플릿으로 편집"
-                    onClick={() => setEditorTarget(tpl)}>
-                    <Copy size={13} />
-                  </button>
-                ) : (
-                  <>
-                    <button className="glass-button icon-btn" style={{ width: 32, flexShrink: 0 }} title="템플릿 편집"
-                      onClick={() => setEditorTarget(tpl)}>
-                      <Pencil size={13} />
-                    </button>
-                    <button className="glass-button icon-btn" style={{ width: 32, flexShrink: 0 }} title="템플릿 삭제"
-                      onClick={() => { if (confirm(`템플릿 "${tpl.name}"을 삭제할까요?`)) removeQuickTemplate(tpl.id); }}>
-                      <Trash2 size={13} />
-                    </button>
-                  </>
-                )}
+                <button className="glass-button icon-btn" style={{ width: 32, flexShrink: 0 }} title="템플릿 편집"
+                  onClick={() => setEditorTarget(tpl)}>
+                  <Pencil size={13} />
+                </button>
+                <button className="glass-button icon-btn" style={{ width: 32, flexShrink: 0 }} title="템플릿 삭제"
+                  onClick={() => { if (confirm(`템플릿 "${tpl.name}"을 삭제할까요?`)) removeQuickTemplate(tpl.id); }}>
+                  <Trash2 size={13} />
+                </button>
               </div>
             ))}
+
+            {templates.length === 0 && (
+              <div style={{ fontSize: 11, color: 'var(--text-secondary)', lineHeight: 1.6, padding: '10px 6px', textAlign: 'center' }}>
+                아직 템플릿이 없습니다.<br />
+                자주 쓰는 시스템 구성(회의실, 강당 등)을 템플릿으로 만들어두면<br />
+                장비만 대입해서 구성도를 바로 생성할 수 있습니다.
+              </div>
+            )}
 
             <button
               className="glass-button"

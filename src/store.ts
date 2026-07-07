@@ -199,7 +199,6 @@ export interface QuickBuildTemplate extends Record<string, unknown> {
   id: string;
   name: string;
   description?: string;
-  isBuiltIn?: boolean;           // 기본 제공 템플릿 (코드 상수, Firestore 미저장)
   slots: TemplateSlot[];
   connections: TemplateConnection[];
   createdAt?: string;
