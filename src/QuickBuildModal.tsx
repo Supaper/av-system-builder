@@ -3,12 +3,13 @@
 // 템플릿의 슬롯에 실제 장비를 대입하면 buildFromTemplate이 노드/엣지를 생성한다.
 // ───────────────────────────────────────────────────────────────────────────
 import { useMemo, useState } from 'react';
-import { Zap, ChevronLeft, ChevronRight, AlertTriangle, Layers, PlusSquare, Minus, Plus } from 'lucide-react';
+import { Zap, ChevronLeft, ChevronRight, AlertTriangle, Layers, PlusSquare, Minus, Plus, Pencil, Trash2, Copy } from 'lucide-react';
 import { useStore, getCandidatesForSlot, CATEGORY_LABELS } from './store';
 import type { QuickBuildTemplate } from './store';
 import { builtInTemplates } from './quickBuildTemplates';
 import { buildFromTemplate, pickBestCandidate } from './utils/quickBuild';
 import type { QuickBuildResult, SlotAssignment } from './utils/quickBuild';
+import { TemplateEditorModal } from './TemplateEditorModal';
 
 interface Props {
   onClose: () => void;
@@ -26,9 +27,13 @@ export function QuickBuildModal({ onClose, onCreate }: Props) {
     [quickTemplates]
   );
 
+  const removeQuickTemplate = useStore(s => s.removeQuickTemplate);
+
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [template, setTemplate] = useState<QuickBuildTemplate | null>(null);
   const [assignments, setAssignments] = useState<Record<string, SlotAssignment>>({});
+  // 편집기 상태 — undefined = 닫힘, null = 새 템플릿, 객체 = 편집(빌트인이면 사본)
+  const [editorTarget, setEditorTarget] = useState<QuickBuildTemplate | null | undefined>(undefined);
 
   const selectTemplate = (tpl: QuickBuildTemplate) => {
     const init: Record<string, SlotAssignment> = {};
@@ -73,24 +78,50 @@ export function QuickBuildModal({ onClose, onCreate }: Props) {
         {step === 1 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, overflowY: 'auto' }}>
             {templates.map(tpl => (
-              <button
-                key={tpl.id}
-                className="glass-button"
-                style={{ justifyContent: 'flex-start', gap: 12, padding: '12px 14px', textAlign: 'left' }}
-                onClick={() => selectTemplate(tpl)}
-              >
-                <Zap size={16} style={{ flexShrink: 0, color: 'var(--accent-color)' }} />
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: 12, fontWeight: 600 }}>
-                    {tpl.name}
-                    {tpl.isBuiltIn && <span style={{ fontSize: 9, color: 'var(--text-secondary)', marginLeft: 6 }}>기본 제공</span>}
+              <div key={tpl.id} style={{ display: 'flex', alignItems: 'stretch', gap: 6 }}>
+                <button
+                  className="glass-button"
+                  style={{ flex: 1, justifyContent: 'flex-start', gap: 12, padding: '12px 14px', textAlign: 'left', minWidth: 0 }}
+                  onClick={() => selectTemplate(tpl)}
+                >
+                  <Zap size={16} style={{ flexShrink: 0, color: 'var(--accent-color)' }} />
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 12, fontWeight: 600 }}>
+                      {tpl.name}
+                      {tpl.isBuiltIn && <span style={{ fontSize: 9, color: 'var(--text-secondary)', marginLeft: 6 }}>기본 제공</span>}
+                    </div>
+                    <div style={{ fontSize: 10, color: 'var(--text-secondary)', marginTop: 2 }}>
+                      {tpl.description || `슬롯 ${tpl.slots.length}개 · 연결 ${tpl.connections.length}개`}
+                    </div>
                   </div>
-                  <div style={{ fontSize: 10, color: 'var(--text-secondary)', marginTop: 2 }}>
-                    {tpl.description || `슬롯 ${tpl.slots.length}개 · 연결 ${tpl.connections.length}개`}
-                  </div>
-                </div>
-              </button>
+                </button>
+                {tpl.isBuiltIn ? (
+                  <button className="glass-button icon-btn" style={{ width: 32, flexShrink: 0 }} title="사본을 만들어 내 템플릿으로 편집"
+                    onClick={() => setEditorTarget(tpl)}>
+                    <Copy size={13} />
+                  </button>
+                ) : (
+                  <>
+                    <button className="glass-button icon-btn" style={{ width: 32, flexShrink: 0 }} title="템플릿 편집"
+                      onClick={() => setEditorTarget(tpl)}>
+                      <Pencil size={13} />
+                    </button>
+                    <button className="glass-button icon-btn" style={{ width: 32, flexShrink: 0 }} title="템플릿 삭제"
+                      onClick={() => { if (confirm(`템플릿 "${tpl.name}"을 삭제할까요?`)) removeQuickTemplate(tpl.id); }}>
+                      <Trash2 size={13} />
+                    </button>
+                  </>
+                )}
+              </div>
             ))}
+
+            <button
+              className="glass-button"
+              style={{ justifyContent: 'center', gap: 8, padding: '10px 14px', borderStyle: 'dashed' }}
+              onClick={() => setEditorTarget(null)}
+            >
+              <Plus size={14} /> 새 템플릿 만들기
+            </button>
           </div>
         )}
 
@@ -221,6 +252,15 @@ export function QuickBuildModal({ onClose, onCreate }: Props) {
           </div>
         </div>
       </div>
+
+      {/* 템플릿 편집기 오버레이 — 저장하면 그 템플릿으로 바로 Step 2 진입 */}
+      {editorTarget !== undefined && (
+        <TemplateEditorModal
+          template={editorTarget}
+          onClose={() => setEditorTarget(undefined)}
+          onSaved={(saved) => selectTemplate(saved)}
+        />
+      )}
     </div>
   );
 }

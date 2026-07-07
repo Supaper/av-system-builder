@@ -220,8 +220,9 @@ interface EquipmentOption {
 - **상단바 Share 통합 메뉴** — Import/Export/공유 링크를 단일 `Share` 드롭다운으로 통합 (`isShareMenuOpen`). 섹션: 클라우드 공유 링크 / 가져오기 3종 / 내보내기 4종(PDF 포함)
 - **반응형 헤더** — `.app-header` flex-wrap 기반. 좁은 화면에서 중앙 툴바가 둘째 줄로 내려감 (1560px 미디어쿼리로 넓은 화면은 한 줄 유지). 어떤 해상도에서도 버튼 잘림 없음
 - **깊은 줌아웃 + 라벨 역스케일** — `minZoom={0.05}`. LOD 오버레이 캡 44/26px, 엣지 라벨 `labelScale = min(3.2, max(1, 0.85/zoom))` (`CustomSmoothstepEdge.tsx`)
-- **노드/엣지 선택 시각 표시** — 선택 노드는 악센트 아웃라인+글로우, 선택 엣지는 4px+글로우, 엣지 호버 3px (App.css — ⚠️ 호버 규칙을 selected 규칙보다 먼저 선언해야 selected가 이김)
-- **빠른제작 (Quick Build)** — 슬롯 기반 템플릿 → 3단계 위저드(`QuickBuildModal`) → 자동 배선(`utils/quickBuild.ts`). 기본 템플릿 3종(`quickBuildTemplates.ts` — 소형 회의실/교육장/강당, 코드 상수). 슬롯은 중분류(`targetName`=`Equipment.name`) 우선 매칭 + 카테고리 폴백(`getCandidatesForSlot`), 연결은 동적 라인 타입 id 사용. 슬롯 기본 장비는 포트 적합도 스코어링(`pickBestCandidate`)으로 자동 선택 — 카탈로그에 포트 미입력 장비가 많아 필수. 배선은 one-to-one/fan-out/fan-in + 양방향 단일 잭 규칙 준수, 부족분은 경고 후 스킵(80% 골격 원칙). 생성 시 서브그래프만 `getLayoutedElements`로 레이아웃 후 추가(add)/교체(replace). 사용자 템플릿은 `quickTemplates` 컬렉션 동기화 준비 완료 (편집 UI는 Backlog)
+- **노드/엣지 선택 시각 표시** — 케이블 팔레트와 충돌하지 않도록 **무채색**(`--text-primary`: 다크=흰색/라이트=검정) 사용. 선택 노드는 점선 아웃라인+글로우, 선택 엣지는 선 색 유지 + 4px + 무채색 할로, 엣지 호버 3px (App.css — ⚠️ 호버 규칙을 selected 규칙보다 먼저 선언해야 selected가 이김. 악센트 파랑은 HDMI/USB, 회색은 SDI 색과 겹치므로 선택 표시에 쓰지 말 것)
+- **빠른제작 (Quick Build)** — 슬롯 기반 템플릿 → 3단계 위저드(`QuickBuildModal`) → 자동 배선(`utils/quickBuild.ts`). 기본 템플릿 3종(`quickBuildTemplates.ts` — 소형 회의실/교육장/강당, 코드 상수). 슬롯은 중분류(`targetName`=`Equipment.name`) 우선 매칭 + 카테고리 폴백(`getCandidatesForSlot`), 연결은 동적 라인 타입 id 사용. 슬롯 기본 장비는 포트 적합도 스코어링(`pickBestCandidate`)으로 자동 선택 — 카탈로그에 포트 미입력 장비가 많아 필수. 배선은 one-to-one/fan-out/fan-in + 양방향 단일 잭 규칙 준수, 부족분은 경고 후 스킵(80% 골격 원칙). 생성 시 서브그래프만 `getLayoutedElements`로 레이아웃 후 추가(add)/교체(replace)
+- **빠른제작 템플릿 편집기** (`TemplateEditorModal`) — 위저드 Step 1에서 새 템플릿 생성/편집/삭제, 기본 제공 템플릿은 사본 생성 후 편집(원본 불변). 슬롯 폼(중분류 datalist 자동완성 + 현재 DB 매칭 종수 표시)·연결 폼(슬롯 쌍/라인 타입/분배/라벨). 저장 → `useStore.quickTemplates` → `librarySync`가 Firestore `quickTemplates` 컬렉션으로 실시간 push. 저장 직후 해당 템플릿으로 Step 2 자동 진입
 
 ---
 
@@ -307,7 +308,7 @@ service cloud.firestore {
 2. **마이크 커버리지 시뮬레이션** — Shure MXA925 등 수음 범위 오버레이 위젯
 3. **글로벌 벤더 카탈로그 연동** — Shure, Crestron, Extron 등 벤더 장비 DB 임포트 (사용자 장비 DB 클라우드 동기화는 v1.8에서 완료, 자체 정리 카탈로그 일괄 반영은 2026-07-03 완료 — 남은 건 해외 벤더 카탈로그 자동 연동)
 4. **BOM 케이블 카탈로그 관리 UI** — `cableCatalog` 컬렉션은 현재 시드 스크립트로만 채워짐. 팀이 직접 카탈로그 항목을 추가·수정할 수 있는 화면 필요 (장비 DB의 `AddEquipmentModal`에 대응하는 것이 아직 없음)
-5. **빠른제작 확장 (Phase 3·4)** — ① 템플릿 편집기 UI (슬롯/연결 폼 편집 — 데이터 계층·`quickTemplates` 동기화는 v1.19에서 완료) ② 캔버스→템플릿 역변환 (기존 도면의 장비를 중분류로 추상화 + 동일 패턴 병합). 기획 원문은 `빠른제작_기능_기획안.md`(Downloads) 참고
+5. **빠른제작 캔버스→템플릿 역변환 (Phase 4)** — 기존 도면의 장비를 중분류로 추상화 + 동일 패턴 병합해 템플릿 자산화 (템플릿 편집기 Phase 3은 v1.19에서 완료). 기획 원문은 `빠른제작_기능_기획안.md`(Downloads) 참고
 6. **카탈로그 포트 정보 보완** — 빠른제작 자동 배선의 성공률은 카탈로그 포트 입력률에 비례. 프로젝터(0/31)·LFD(0/15)·파워 앰프(1/47) 등 포트 미입력 그룹을 채우면 기본 템플릿 배선이 완성됨 (2026-07-07 전수 확인 기준)
 
 ---
