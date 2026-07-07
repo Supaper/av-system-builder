@@ -3,6 +3,7 @@ import { Handle, Position, useStore as useRFStore } from '@xyflow/react';
 import type { NodeProps, Node } from '@xyflow/react';
 import { Video, Mic, Cpu, Network, Monitor, Users, Radio, MoreHorizontal } from 'lucide-react';
 import { useStore, getDefaultEquipmentImage, calculateNodeHeight, PORT_ROW_HEIGHT, PORT_ROW_GAP } from './store';
+import { normalizeBidiEdges } from './utils/edgeProcessing';
 import type { Equipment, EquipmentCategory } from './store';
 
 type EquipmentNodeData = Equipment & { dimmed?: boolean };
@@ -50,13 +51,17 @@ export function EquipmentNode({ id: nodeId, data }: NodeProps<EquipmentNodeType>
   // 포트 색상은 라인 타입(케이블 타입) 색상과 항상 일치해야 한다 — 동적 조회
   const lineTypes = useStore(state => state.lineTypes);
   const edges = useStore(state => state.edges);
+  const allNodes = useStore(state => state.nodes);
   const portColor = (type: string) =>
     lineTypes.find(lt => lt.id === type)?.color || fallbackPortColors[type] || '#fff';
 
-  // 양방향 포트는 물리적으로 잭 하나 — 한쪽 핸들이 사용 중이면 반대쪽을 비활성화
+  // 양방향 포트는 물리적으로 잭 하나 — 한쪽 핸들이 사용 중이면 반대쪽을 비활성화.
+  // 판정은 저장 방향이 아니라 "렌더 방향"(normalizeBidiEdges 후) 기준 —
+  // 노드를 드래그해 좌우가 바뀌면 사용/비활성 핸들도 함께 전환된다.
+  const renderedEdges = normalizeBidiEdges(edges, allNodes);
   const bidiSideInUse = (portId: string) => ({
-    asSource: edges.some(e => e.source === nodeId && e.sourceHandle === `source_${portId}`),
-    asTarget: edges.some(e => e.target === nodeId && e.targetHandle === `target_${portId}`),
+    asSource: renderedEdges.some(e => e.source === nodeId && e.sourceHandle === `source_${portId}`),
+    asTarget: renderedEdges.some(e => e.target === nodeId && e.targetHandle === `target_${portId}`),
   });
 
   const bgColor = categoryColors[data.category] || '#666';

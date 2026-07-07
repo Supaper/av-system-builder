@@ -86,8 +86,9 @@ React + TypeScript + Vite 기반의 **AV System Configuration Builder**.
 - **신호 엣지** (sdi, video, audio, usb): `weight=3, minlen=1` → Dagre 랭크 결정
 - **보조 엣지** (network, control): `weight=1, minlen=0` → 같은 랭크 허용, 랭크에 영향 안 줌
 - 신호 엣지가 없을 경우 전체 엣지 사용 (fallback)
-- `NODE_WIDTH=220, nodesep=60, ranksep=260`
-- 포스트 프로세싱: 같은 열 노드 간 최소 gap 24px 강제
+- `NODE_WIDTH=220, nodesep=90, ranksep=280`
+- 포스트 프로세싱: **Sugiyama식 교대 barycenter 스윕 2회** — L→R(들어오는 선의 소스 포트 Y) + R→L(나가는 선의 **타겟 포트 Y**; 입력 포트 순번대로 소스 노드 정렬). 신호 엣지 가중 3, 보조 1 (신호 체인이 배치를 지배). 이후 같은 열 최소 gap 40px 강제
+- **양방향↔양방향 엣지 방향 정규화** (`edgeProcessing.normalizeBidiEdges`): 렌더 파이프라인에서 노드 좌우 위치에 따라 source/target을 뒤집어 항상 좌→우로 흐르게 함. 저장 데이터 불변. 핸들 비활성(`EquipmentNode`)·연결 유효성(`isValidConnection`)도 이 "렌더 방향" 기준으로 판정해야 함
 
 ### 이미지 저장
 - 사용자 이미지는 `FileReader` → **Base64 Data URL** 로 변환해 LocalStorage에 저장

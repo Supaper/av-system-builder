@@ -15,7 +15,7 @@ import jsPDF from 'jspdf';
 
 import { useStore, getDefaultEquipmentImage, CATEGORY_LABELS } from './store';
 import { getLayoutedElements } from './utils/layout';
-import { processEdgesWithOffsets } from './utils/edgeProcessing';
+import { processEdgesWithOffsets, normalizeBidiEdges } from './utils/edgeProcessing';
 import type { EquipmentCategory, Equipment } from './store';
 import { EquipmentNode } from './EquipmentNode';
 import { AddEquipmentModal } from './AddEquipmentModal';
@@ -89,7 +89,9 @@ function FlowBuilder() {
   const { screenToFlowPosition, fitView, zoomIn, zoomOut } = useReactFlow();
 
   const processedEdges = useMemo(
-    () => processEdgesWithOffsets(edges, nodes),
+    // 양방향↔양방향 엣지는 노드 상대 위치에 맞게 좌→우로 정규화한 뒤 오프셋 배정
+    // (드래그로 좌우가 바뀌면 즉시 반대쪽 핸들로 전환됨)
+    () => processEdgesWithOffsets(normalizeBidiEdges(edges, nodes), nodes),
     [edges, nodes]
   );
 
@@ -620,15 +622,16 @@ function FlowBuilder() {
 
     // 양방향 포트는 물리적으로 잭 하나 — 반대쪽 핸들이 이미 사용 중이면 연결 거부
     // (EquipmentNode의 isConnectable 비활성화에 대한 이중 방어선)
+    const renderedEdges = normalizeBidiEdges(edges, nodes); // 렌더 방향 기준으로 판정
     const bidiOppositeInUse = (nodeId: string | null, handleId: string | null) => {
       if (!nodeId || !handleId) return false;
       if (handleId.startsWith('source_')) {
         const opposite = `target_${handleId.substring(7)}`;
-        return edges.some(e => e.target === nodeId && e.targetHandle === opposite);
+        return renderedEdges.some(e => e.target === nodeId && e.targetHandle === opposite);
       }
       if (handleId.startsWith('target_')) {
         const opposite = `source_${handleId.substring(7)}`;
-        return edges.some(e => e.source === nodeId && e.sourceHandle === opposite);
+        return renderedEdges.some(e => e.source === nodeId && e.sourceHandle === opposite);
       }
       return false;
     };
