@@ -54,6 +54,8 @@
 **수정안:** `package.json` version을 진짜 버전으로 올리고, `vite.config.ts`에
 `define: { __APP_VERSION__: JSON.stringify(pkg.version) }` 추가 → 배지가 자동 표시.
 릴리스 절차가 "package.json 버전 올리기 + CHANGELOG 작성" 둘로 정리됨.
+✅ **완료 (2026-07-08)** — package.json 1.19.0 + `__APP_VERSION__` 주입, 배지 자동 표시.
+덤으로 배지 클릭 → 릴리즈노트 모달(CHANGELOG.md `?raw` 파싱, `ReleaseNotesModal.tsx`) 추가.
 
 ## 우선순위 3 — 중복 UI 코드 추출
 

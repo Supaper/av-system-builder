@@ -36,6 +36,10 @@ import { LoadPresetModal } from './LoadPresetModal';
 import { ShareModal } from './ShareModal';
 import { QuickBuildModal } from './QuickBuildModal';
 import type { QuickBuildResult } from './utils/quickBuild';
+import { ReleaseNotesModal } from './ReleaseNotesModal';
+
+// 버전 단일 소스: package.json → vite.config.ts define 주입 (수동 갱신 금지)
+const APP_VERSION = `v${__APP_VERSION__.replace(/\.0$/, '')}`;
 import { loadSharedDiagram } from './cloud';
 import { startLibrarySync, type SyncStatus } from './librarySync';
 import { isFirebaseConfigured } from './firebaseConfig';
@@ -246,6 +250,7 @@ function FlowBuilder() {
   const [isBulkImportModalOpen, setIsBulkImportModalOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isQuickBuildOpen, setIsQuickBuildOpen] = useState(false);
+  const [isReleaseNotesOpen, setIsReleaseNotesOpen] = useState(false);
   const [shareLoadState, setShareLoadState] = useState<'idle' | 'loading' | 'error'>('idle');
   const [syncStatus, setSyncStatus] = useState<SyncStatus>(isFirebaseConfigured ? 'connecting' : 'off');
 
@@ -671,7 +676,14 @@ function FlowBuilder() {
         <div className="header-title">
           <Settings size={14} color="var(--accent-color)" />
           <span>AV System Builder</span>
-          <span className="version-tag">v1.19</span>
+          <span
+            className="version-tag"
+            style={{ cursor: 'pointer' }}
+            title="릴리즈노트 보기"
+            onClick={() => setIsReleaseNotesOpen(true)}
+          >
+            {APP_VERSION}
+          </span>
           <button
             className="glass-button icon-btn"
             onClick={handleNewDiagram}
@@ -1442,6 +1454,9 @@ function FlowBuilder() {
           onClose={() => setIsQuickBuildOpen(false)}
           onCreate={handleQuickBuildCreate}
         />
+      )}
+      {isReleaseNotesOpen && (
+        <ReleaseNotesModal onClose={() => setIsReleaseNotesOpen(false)} />
       )}
 
       {/* 공유 링크로 진입 시 로딩/오류 오버레이 */}

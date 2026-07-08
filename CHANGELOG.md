@@ -22,7 +22,8 @@ Format: `## [vX.Y] — YYYY-MM-DD` / Added · Changed · Fixed · Removed
 
 ### Changed
 - **노드/엣지 선택 표시를 무채색 링+할로로 변경** — 악센트 파란색이 HDMI/USB 케이블색과 겹쳐 어색하던 문제. 노드·엣지 모두 동일한 시각 언어: 테마 중립색(다크=흰색/라이트=검정) 얇은 링 + 부드러운 할로(후광), 엣지는 선 색 유지 — 회색은 SDI 케이블색(#374151)과 겹쳐 배제
-- 헤더 버전 배지 v1.18 → v1.19 (배지 업데이트 누락 수정)
+- **버전 표기 자동화** — 헤더 배지가 `package.json`의 version에서 자동 표시됨 (`vite.config.ts`의 `__APP_VERSION__` 주입). 수동 갱신 누락으로 v1.18이 계속 표시되던 문제 재발 방지 — 릴리즈 절차는 "package.json 버전 올리기 + CHANGELOG 작성" 둘로 정리
+- **릴리즈노트 인앱 표시** — 헤더 버전 배지 클릭 시 릴리즈노트 모달 (`ReleaseNotesModal`). 이 CHANGELOG.md를 빌드 시 그대로 임포트해 파싱하므로 별도 관리 불필요 — CHANGELOG만 쓰면 앱 안 릴리즈노트가 자동 최신화
 
 ---
 
