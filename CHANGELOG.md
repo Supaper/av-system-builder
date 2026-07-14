@@ -5,6 +5,22 @@ Format: `## [vX.Y] — YYYY-MM-DD` / Added · Changed · Fixed · Removed
 
 ---
 
+## [v1.19.1] — 2026-07-14
+
+### Fixed
+- **빠른제작 슬롯 후보에 다른 카테고리의 동명 중분류가 섞이던 문제** — 예: "분배기" 슬롯에 HDMI 분배기 외에 무선마이크 안테나 분배기·CATV 분배기까지 후보로 표시됨. 슬롯 매칭(`getCandidatesForSlot`)이 중분류+카테고리 동시 일치 후보를 우선하도록 수정 (이름만 일치하는 후보는 폴백으로 유지)
+
+### Changed
+- **장비 카탈로그 2차 정리** (`scripts/cleanup-catalog-20260714.mjs`, Firestore 반영 완료) — 사용자 수동 정리 후 전수 점검 결과 반영:
+  - 완전 중복 4건 병합·삭제 (NX-1200 / VDM-16X / GSM4230P / UVC-01 — 포트가 더 완전한 항목 유지, 제조사·이미지 등 병합)
+  - WJD 시리즈 분배기 5건의 model↔description 뒤바뀜 교정
+  - 표기 통일: "KVM 스위치"→"KVM", "오디오 DSP"→"DSP"(audio 이동), broadcast "앰프"→"RF 앰프"(CATV 증폭기를 오디오 파워 앰프와 구분)
+  - conferencing 단독 중분류 병합: 화상회의 마이크→마이크, 무선 프레젠테이션 Pod·화상회의 앰프·G7500 리모컨·화상회의 컨트롤러→화상회의 장비
+  - Logitech 연장/카메라 케이블 4건을 장비 DB에서 cableCatalog로 이관
+  - 호환 모델별로 분리 등재됐던 옵션 5쌍을 `compatibleModels` 배열 병합으로 1건씩 통합
+
+---
+
 ## [v1.19] — 2026-07-07
 
 ### Added

@@ -208,6 +208,10 @@ export interface QuickBuildTemplate extends Record<string, unknown> {
 /** 슬롯의 장비 후보 조회 — 중분류(name) 정확 일치 우선, 매칭 0개면 카테고리 폴백 */
 export const getCandidatesForSlot = (slot: TemplateSlot, db: Equipment[]): Equipment[] => {
   if (slot.targetName) {
+    // 같은 중분류 이름이 여러 카테고리에 존재할 수 있어(예: audio 안테나 분배기 vs video HDMI 분배기)
+    // 카테고리까지 일치하는 후보를 우선하고, 없으면 이름만 일치하는 후보로 폴백
+    const byNameAndCategory = db.filter(eq => eq.name === slot.targetName && eq.category === slot.category);
+    if (byNameAndCategory.length > 0) return byNameAndCategory;
     const byName = db.filter(eq => eq.name === slot.targetName);
     if (byName.length > 0) return byName;
   }

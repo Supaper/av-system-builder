@@ -222,9 +222,10 @@ interface EquipmentOption {
 - **반응형 헤더** — `.app-header` flex-wrap 기반. 좁은 화면에서 중앙 툴바가 둘째 줄로 내려감 (1560px 미디어쿼리로 넓은 화면은 한 줄 유지). 어떤 해상도에서도 버튼 잘림 없음
 - **깊은 줌아웃 + 라벨 역스케일** — `minZoom={0.05}`. LOD 오버레이 캡 44/26px, 엣지 라벨 `labelScale = min(3.2, max(1, 0.85/zoom))` (`CustomSmoothstepEdge.tsx`)
 - **노드/엣지 선택 시각 표시** — 케이블 팔레트와 충돌하지 않도록 **무채색**(`--text-primary`: 다크=흰색/라이트=검정) 링+할로로 통일. 선택 노드는 1.5px 링 + 글로우 2겹(box-shadow), 선택 엣지는 선 색 유지 + 4px + 무채색 할로, 엣지 호버 3px (App.css — ⚠️ 호버 규칙을 selected 규칙보다 먼저 선언해야 selected가 이김. 악센트 파랑은 HDMI/USB, 회색은 SDI 색과 겹치므로 선택 표시에 색상 사용 금지)
-- **빠른제작 (Quick Build)** — 슬롯 기반 템플릿 → 3단계 위저드(`QuickBuildModal`) → 자동 배선(`utils/quickBuild.ts`). 템플릿은 **전부 사용자 정의** (기본 제공 템플릿 개념 없음 — 2026-07-08 사용자 결정으로 제거). 슬롯은 중분류(`targetName`=`Equipment.name`) 우선 매칭 + 카테고리 폴백(`getCandidatesForSlot`), 연결은 동적 라인 타입 id 사용. 슬롯 기본 장비는 포트 적합도 스코어링(`pickBestCandidate`)으로 자동 선택 — 카탈로그에 포트 미입력 장비가 많아 필수. 배선은 one-to-one/fan-out/fan-in + 양방향 단일 잭 규칙 준수, 부족분은 경고 후 스킵(80% 골격 원칙). 생성 시 서브그래프만 `getLayoutedElements`로 레이아웃 후 추가(add)/교체(replace)
+- **빠른제작 (Quick Build)** — 슬롯 기반 템플릿 → 3단계 위저드(`QuickBuildModal`) → 자동 배선(`utils/quickBuild.ts`). 템플릿은 **전부 사용자 정의** (기본 제공 템플릿 개념 없음 — 2026-07-08 사용자 결정으로 제거). 슬롯은 중분류+카테고리 동시 일치 우선 → 중분류만 일치 → 카테고리 폴백 순 매칭(`getCandidatesForSlot` — 동명 중분류가 여러 카테고리에 있어 카테고리 필터 필수, 예: audio/video/broadcast "분배기"), 연결은 동적 라인 타입 id 사용. 슬롯 기본 장비는 포트 적합도 스코어링(`pickBestCandidate`)으로 자동 선택 — 카탈로그에 포트 미입력 장비가 많아 필수. 배선은 one-to-one/fan-out/fan-in + 양방향 단일 잭 규칙 준수, 부족분은 경고 후 스킵(80% 골격 원칙). 생성 시 서브그래프만 `getLayoutedElements`로 레이아웃 후 추가(add)/교체(replace)
 - **빠른제작 템플릿 편집기** (`TemplateEditorModal`) — 위저드 Step 1에서 새 템플릿 생성/편집/삭제. 슬롯 폼(중분류 datalist 자동완성 + 현재 DB 매칭 종수 표시)·연결 폼(슬롯 쌍/라인 타입/분배/라벨). 저장 → `useStore.quickTemplates` → `librarySync`가 Firestore `quickTemplates` 컬렉션으로 실시간 push. 저장 직후 해당 템플릿으로 Step 2 자동 진입
 - **버전 자동화 + 인앱 릴리즈노트** — 헤더 배지 = `package.json` version 자동 표시(`__APP_VERSION__`), 배지 클릭 → `ReleaseNotesModal`이 CHANGELOG.md를 `?raw` 임포트·파싱해 표시 (아래 "릴리즈노트 작성 규칙" 참고)
+- **장비 카탈로그 2차 정리 (2026-07-14, Firestore 반영 완료)** — 사용자 수동 정리 후 전수 점검: 완전 중복 4건 병합·삭제, WJD 분배기 model↔description 교정, 표기 통일(KVM/DSP/RF 앰프), conferencing 단독 중분류 병합, Logitech 케이블 4건 cableCatalog 이관, 호환 모델별 분리 등재 옵션 5쌍 병합 (`scripts/cleanup-catalog-20260714.mjs`). 장비 674개·옵션 132개·케이블 185개. 잔여 과제: 옵션 깨진 호환 참조 9건(대상 장비 모델 부재), cableCatalog `lineTypeId` 미지정 168건
 
 ---
 
@@ -309,7 +310,7 @@ service cloud.firestore {
 1. **실시간 협업** — WebSockets 또는 CRDT 기반 동시 편집 (현재 팀 공용 동기화는 last-write-wins 방식)
 2. **BOM 케이블 카탈로그 관리 UI** — `cableCatalog` 컬렉션은 현재 시드 스크립트로만 채워짐. 팀이 직접 카탈로그 항목을 추가·수정할 수 있는 화면 필요 (장비 DB의 `AddEquipmentModal`에 대응하는 것이 아직 없음)
 3. **빠른제작 캔버스→템플릿 역변환 (Phase 4)** — 기존 도면의 장비를 중분류로 추상화 + 동일 패턴 병합해 템플릿 자산화 (템플릿 편집기 Phase 3은 v1.19에서 완료). 기획 원문은 `빠른제작_기능_기획안.md`(Downloads) 참고
-4. **카탈로그 포트 정보 보완** — 빠른제작 자동 배선의 성공률은 카탈로그 포트 입력률에 비례. 프로젝터(0/31)·LFD(0/15)·파워 앰프(1/47) 등 포트 미입력 그룹을 채우면 기본 템플릿 배선이 완성됨 (2026-07-07 전수 확인 기준)
+4. **카탈로그 포트 정보 보완** — 빠른제작 자동 배선의 성공률은 카탈로그 포트 입력률에 비례. 프로젝터(0/31)·LFD(0/15)·파워 앰프(0/46) 등 포트 미입력 그룹을 채우면 기본 템플릿 배선이 완성됨 (2026-07-14 기준 포트 0개 432/674 — 스크린·스피커처럼 포트가 원래 없거나 단순한 그룹 제외하면 실질 공백은 파워 앰프·프로젝터·LFD·TV·마이크류)
 
 > 마이크 커버리지 시뮬레이션·글로벌 벤더 카탈로그 연동은 2026-07-08 사용자 결정으로 백로그에서 제외 (이 시스템의 방향과 맞지 않음 — 다시 제안하지 말 것)
 
